@@ -31,14 +31,22 @@ import fr.zetamap.morecommands.util.Strings;
 
 
 public class MessagingModule extends AbstractModule {
-  public static final String[] tags = {"[cyan]", "[white]", "[orange]", "[scarlet]", "", "[green]"};
+  public static final String[] tags = {"[green]", "[cyan]", "[white]", "[orange]", "[scarlet]", ""};
   protected static final Object[] empty = {};
   public boolean chatEnabled;
 
-  public void serverMessage(String tag, String topic, String message) { serverMessage(tag, topic, message, empty); }
-  public void serverMessage(String tag, String topic, String message, Object... args) {
-    if (args.length > 0) message = Strings.format(message.replace("@", "[accent]@" + tag), args);
+  public void serverMessage(LogLevel level, String topic, String message) { serverMessage(level, topic, message, empty); }
+  public void serverMessage(LogLevel level, String topic, String message, Object... args) {
+    if (level == LogLevel.none) return;
+    String tag = tags[level == null ? 0 : level.ordinal()+1];
+    if (args.length > 0) {
+      String color = level == LogLevel.err ? "[orange]" : "[accent]";
+      message = Strings.format(message.replace("@", color + '@' + tag), args);
+    }
     topic = (topic == null ? "" : "[scarlet][[" + topic + "]: ") + tag;
+    Call.sendMessage(topic + message.replace("\n", "\n" + topic));
+
+    /*
     int i = 0, nl = message.indexOf('\n');
     while (nl >= 0) {
       Call.sendMessage(topic + message.substring(i, nl));
@@ -46,27 +54,43 @@ public class MessagingModule extends AbstractModule {
       nl = message.indexOf('\n', i);
     }
     Call.sendMessage(topic + (i == 0 ? message : message.substring(i)));
+    */
   }
+  public void serverOk(String topic, String message) { serverMessage(null, topic, message, empty); }
+  public void serverOk(String topic, String message, Object... args) { serverMessage(null, topic, message, args); }
+  public void serverDebug(String topic, String message) { serverMessage(LogLevel.debug, topic, message, empty); }
+  public void serverDebug(String topic, String message, Object... args) { serverMessage(LogLevel.debug, topic, message, args); }
+  public void serverInfo(String topic, String message) { serverMessage(LogLevel.info, topic, message, empty); }
+  public void serverInfo(String topic, String message, Object... args) { serverMessage(LogLevel.info, topic, message, args); }
+  public void serverWarn(String topic, String message) { serverMessage(LogLevel.warn, topic, message, empty); }
+  public void serverWarn(String topic, String message, Object... args) { serverMessage(LogLevel.warn, topic, message, args); }
+  public void serverErr(String topic, String message) { serverMessage(LogLevel.err, topic, message, empty); }
+  public void serverErr(String topic, String message, Object... args) { serverMessage(LogLevel.err, topic, message, args); }
 
-  protected void send(LogLevel level, String topic, String message, Object... args) {
+  public void playerMessage(PlayerData player, LogLevel level, String text) { playerMessage(player, level, text, empty); }
+  public void playerMessage(PlayerData player, LogLevel level, String text, Object... args) {
     if (level == LogLevel.none) return;
-    serverMessage(tags[level.ordinal()], topic, message, args);
+    String tag = tags[level == null ? 0 : level.ordinal()+1];
+    if (args.length > 0) {
+      String color = level == LogLevel.err ? "[orange]" : "[accent]";
+      text = Strings.format(text.replace("@", color + '@' + tag), args);
+    }
+    Players.info(player, tag + text);
   }
+  public void playerOk(PlayerData player, String text) { playerMessage(player, null, text, empty); }
+  public void playerOk(PlayerData player, String text, Object... args) { playerMessage(player, null, text, args); }
+  public void playerDebug(PlayerData player, String text) { playerMessage(player, LogLevel.debug, text, empty); }
+  public void playerDebug(PlayerData player, String text, Object... args) { playerMessage(player, LogLevel.debug, text, args); }
+  public void playerInfo(PlayerData player, String text) { playerMessage(player, LogLevel.info, text, empty); }
+  public void playerInfo(PlayerData player, String text, Object... args) { playerMessage(player, LogLevel.info, text, args); }
+  public void playerWarn(PlayerData player, String text) { playerMessage(player, LogLevel.warn, text, empty); }
+  public void playerWarn(PlayerData player, String text, Object... args) { playerMessage(player, LogLevel.warn, text, args); }
+  public void playerErr(PlayerData player, String text) { playerMessage(player, LogLevel.err, text, empty); }
+  public void playerErr(PlayerData player, String text, Object... args) { playerMessage(player, LogLevel.err, text, args); }
 
-  public void serverDebug(String topic, String message) { send(LogLevel.debug, topic, message, empty); }
-  public void serverDebug(String topic, String message, Object... args) { send(LogLevel.debug, topic, message, args); }
-  public void serverInfo(String topic, String message) { send(LogLevel.info, topic, message, empty); }
-  public void serverInfo(String topic, String message, Object... args) { send(LogLevel.info, topic, message, args); }
-  public void serverWarn(String topic, String message) { send(LogLevel.warn, topic, message, empty); }
-  public void serverWarn(String topic, String message, Object... args) { send(LogLevel.warn, topic, message, args); }
-  public void serverErr(String topic, String message) { send(LogLevel.err, topic, message, empty); }
-  public void serverErr(String topic, String message, Object... args) { send(LogLevel.err, topic, message, args); }
-  // These ones are special
-  public void serverOk(String topic, String message) {
-    serverMessage(tags[LogLevel.none.ordinal()+1], topic, message, empty);
-  }
-  public void serverOk(String topic, String message, Object... args) {
-    serverMessage(tags[LogLevel.none.ordinal()+1], topic, message, args);
+  public void sendWhisper(PlayerData src, PlayerData dest, String msg) {
+    Players.info(dest, "[coral][[@[coral]] [gold]--> me[]: [white]@", src.getName(), msg);
+    Players.info(src, "[gold]me -->[] [coral][[@[coral]]: [white]@", dest.getName(), msg);
   }
 
   @Override
@@ -77,7 +101,7 @@ public class MessagingModule extends AbstractModule {
     Vars.netServer.admins.addChatFilter((p, m) -> {
       PlayerData player = PlayerData.get(p);
       if (player == null || chatEnabled || player.admin()) return m;
-      Players.err(p, "The chat is disabled, you can't speak!");
+      player.err("The chat is disabled, you can't speak!");
       return null;
     });
 
@@ -119,10 +143,10 @@ public class MessagingModule extends AbstractModule {
       Players.SearchResult target = Players.find(args);
 
       if (!target.found) {
-        Players.errPlayerNotFound(player);
+        player.errPlayerNotFound();
         return;
       } else if (target.player == player) {
-        Players.err(player, "You cannot whisper to yourself.");
+        player.err("You cannot whisper to yourself.");
         return;
       }
 
@@ -132,47 +156,44 @@ public class MessagingModule extends AbstractModule {
       if (message == null) return;
 
       if (Strings.stripColors(message).isBlank()) {
-        Players.err(player, "The message is empty.");
+        player.err("The message is empty.");
         return;
       }
 
       player.setWhisper(target.player);
-      Players.info(target.player, "[coral][[@[coral]] [gold]--> me[]: [white]@", player.getName(), message);
-      Players.info(player, "[gold]me -->[] [coral][[@[coral]]: [white]@", target.player.getName(), message);
+      sendWhisper(player, target.player, message);
     });
 
     handler.add("r", "<message...>", "Reply to the last whispered message.", (args, player) -> {
       if (!player.hasWhispered()) {
-        Players.err(player, "No received whisper.");
+        player.err("No received whisper.");
         return;
       } else if (player.whisperTarget == null) {
-        Players.err(player, "The player has disconnected.");
+        player.err("The player has disconnected.");
         return;
       } else if (Strings.stripColors(args[0]).isBlank()) {
-        Players.err(player, "The message is empty.");
+        player.err("The message is empty.");
         return;
       }
 
-      Players.info(player.whisperTarget, "[coral][[@[coral]] [gold]--> me[]: [white]@", player.getName(), args[0]);
-      Players.info(player, "[gold]me -->[] [coral][[@[coral]]: [white]@", player.whisperTarget.getName(), args[0]);
+      sendWhisper(player, player.whisperTarget, args[0]);
     });
 
     handler.addAdmin("chat", "[on|off]", "Toggle the chat.", (args, player) -> {
       boolean old = chatEnabled;
 
       if (args.length == 0) {
-        Players.info(player, "The chat is currently @.", chatEnabled ? "enabled" : "disabled");
+        player.info("The chat is currently @.", chatEnabled ? "enabled" : "disabled");
         return;
       } else if (Strings.isTrue(args[0])) chatEnabled = true;
       else if (Strings.isFalse(args[0])) chatEnabled = false;
       else {
-        Players.err(player, "Invalid argument!");
+        player.err("Invalid argument!");
         return;
       }
 
       logger.info("Chat @ by '@' (@).", chatEnabled ? "enabled" : "disabled", player.stripedName, player);
-      if (old != chatEnabled)
-        serverWarn("Chat", "@ by @.", chatEnabled ? "Enabled" : "Disabled", player.getName());
+      if (old != chatEnabled) serverWarn("Chat", "@ by @.", chatEnabled ? "Enabled" : "Disabled", player.getName());
     });
   }
 }

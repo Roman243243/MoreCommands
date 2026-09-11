@@ -34,14 +34,14 @@ public class ClientCommandHandler {
   private static final Logger logger = new Logger("Client Commands");
   public final CommandHandler handler;
   public final Seq<Command> all = new Seq<>(), admin = new Seq<>();
-  /** 
+  /**
    * Non-exhaustive list of potential admin commands from mindustry server or some other plugins. <br>
    * More Commands admin commands will be added to this list.
    */
   public final ObjectSet<String> defaultAdminCommands = ObjectSet.with(
       "a", "js", "vanish", "killall", "pause", "rollback", "saves", "restart", "blacklist", "whitelist"
   );
-  
+
   public ClientCommandHandler(CommandHandler handler) {
     this.handler = handler;
   }
@@ -49,27 +49,27 @@ public class ClientCommandHandler {
   public void add(String name, String desc, CommandRunner<PlayerData> runner) {
     add(name, "", desc, runner);
   }
-  
+
   public void add(String name, String params, String desc, CommandRunner<PlayerData> runner) {
     // If the command already exist, try to place the new at the same position
     int index = handler.getCommandList().indexOf(c -> c.text.equals(name));
     all.add(handler.<Player>register(name, params, desc, (args, player) -> {
       PlayerData p = getcheck(player);
       if (p == null) return;
-      
+
       try { runner.accept(args, p); }
-      catch (Exception e) { 
-        logger.err("Error while running command '@' for player '@'", e, name, player.uuid()); 
-        Players.err(player, "Error while running the command. Please report this error.");
+      catch (Exception e) {
+        logger.err("Error while running command '@' for player '@'", e, name, p.uuid);
+        p.err("Error while running the command. Please report this error.");
       }
     }));
     if (index != -1) handler.getCommandList().insert(index, handler.getCommandList().pop());
   }
-  
+
   public void addAdmin(String name, String desc, CommandRunner<PlayerData> runner) {
     addAdmin(name, "", desc, runner);
   }
-  
+
   public void addAdmin(String name, String params, String desc, CommandRunner<PlayerData> runner) {
     // If the command already exist, try to place the new at the same position
     int index = handler.getCommandList().indexOf(c -> c.text.equals(name));
@@ -77,27 +77,27 @@ public class ClientCommandHandler {
       if (!player.admin) {
         Players.errCommandUseDenied(player);
         return;
-      } 
-      
+      }
+
       PlayerData p = getcheck(player);
       if (p == null) return;
-      
+
       try { runner.accept(args, p); }
-      catch (Exception e) { 
-        logger.err("Error while running command '@' for admin player '@'", e, name, player.uuid());
-        Players.err(player, "Error while running the command: @", e.toString());
+      catch (Exception e) {
+        logger.err("Error while running command '@' for admin player '@'", e, name, p.uuid);
+        p.err("Error while running the command: @", e.toString());
       }
     })).peek()).peek().text);
     if (index != -1) handler.getCommandList().insert(index, handler.getCommandList().pop());
   }
-  
+
   private PlayerData getcheck(Player player) {
     PlayerData p = PlayerData.get(player);
     // Should never happen
     if (p == null) {
       logger.err("FATAL: Player '@' is not in PlayerData! Please report this error at: @.", player.uuid(),
                  "https://github.com/ZetaMap/MoreCommands/issues/new");
-      Players.err(p, "FATAL: Operation not permitted! Please report this error.");
+      Players.err(player, "FATAL: Operation not permitted! Please report this error.");
     }
     return p;
   }
@@ -109,13 +109,13 @@ public class ClientCommandHandler {
   public Command get(String name) {
     return handler.getCommandList().find(c -> c.text.equals(name));
   }
-  
+
   public void remove(String name) {
     handler.removeCommand(name);
     all.remove(c -> c.text.equals(name));
     admin.remove(c -> c.text.equals(name));
   }
-  
+
   public void clear() {
     all.each(c -> handler.removeCommand(c.text));
     all.clear();

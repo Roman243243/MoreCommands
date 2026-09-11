@@ -29,13 +29,13 @@ package fr.zetamap.morecommands.util;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Iterator;
 import java.util.StringJoiner;
 
 import arc.files.Fi;
 import arc.func.*;
 import arc.graphics.Color;
 import arc.struct.Seq;
-import arc.util.Structs;
 import arc.util.serialization.JsonValue;
 import arc.util.serialization.JsonWriter.OutputType;
 import arc.util.serialization.SerializationException;
@@ -149,7 +149,7 @@ public class Strings extends arc.util.Strings {
       lengths = newLengths;
     }
 
-    int max = max(columns, a -> a.size), fSize = filler.length();
+    int max = Structs.max(columns, a -> a.size), fSize = filler.length();
     Seq<String> arr = new Seq<>(max);
     StringBuilder builder = new StringBuilder();
     String[] fillers = new String[columns.length];
@@ -210,96 +210,16 @@ public class Strings extends arc.util.Strings {
     return result;
   }
 
-  public static <T> int max(Iterable<T> list, Intf<T> intifier) {
-    boolean first = true;
-    int index = 0;
-
-    for (T i : list) {
-      int s = intifier.get(i);
-      if (first) index = s;
-      else if (s > index) index = s;
-      first = false;
-    }
-
-    return index;
-  }
-
-  public static <T> int max(T[] list, Intf<T> intifier) {
-    boolean first = true;
-    int index = 0;
-
-    for (T i : list) {
-      int s = intifier.get(i);
-      if (first) index = s;
-      else if (s > index) index = s;
-      first = false;
-    }
-
-    return index;
-  }
-
-  public static <T> int min(Iterable<T> list, Intf<T> intifier) {
-    boolean first = true;
-    int index = 0;
-
-    for (T i : list) {
-      int s = intifier.get(i);
-      if (first) index = s;
-      else if (s < index) index = s;
-      first = false;
-    }
-
-    return index;
-  }
-
-  public static <T> int min(T[] list, Intf<T> intifier) {
-    boolean first = true;
-    int index = 0;
-
-    for (T i : list) {
-      int s = intifier.get(i);
-      if (first) index = s;
-      else if (s < index) index = s;
-      first = false;
-    }
-
-    return index;
-  }
-
   public static int maxLength(Iterable<? extends String> list) {
-    return max(list, str -> str.length());
+    return Structs.max(list, String::length);
   }
 
   public static int maxLength(String... list) {
-    return max(list, str -> str.length());
+    return Structs.max(list, String::length);
   }
 
-  //TODO: need to merge these three methods in one StringBuilder
   public static String normalize(String str) {
     return stripGlyphs(stripColors(str)).strip();
-  }
-
-  public static int bits2int(boolean... list) {
-    int out = 0;
-    for (boolean element : list) {
-      out |= element ? 1 : 0;
-      out <<= 1;
-    }
-    return out >> 1;
-  }
-
-  public static boolean[] int2bits(int number) { return int2bits(number, 0); }
-  public static boolean[] int2bits(int number, int bits) {
-    // Check value because 0 have a negative size
-    if (number == 0) return new boolean[bits == 0 ? 1 : bits];
-
-    int size = bits < 1 ? (int)(Math.log(number)/Math.log(2)+1) : bits;
-    boolean[] out = new boolean[size];
-    while (size-- > 0) {
-      out[size] = (number & 1) != 0;
-      number >>= 1;
-    }
-    return out;
   }
 
   public static String hueToColorTag(int hue) {
@@ -624,7 +544,6 @@ public class Strings extends arc.util.Strings {
     return false;
   }
 
-
   public static Fi getFiChild(Fi parent, String path) {
     if (parent == null) throw new NullPointerException("parent cannot be null");
     if (path == null || path.isEmpty()) return parent;
@@ -671,10 +590,11 @@ public class Strings extends arc.util.Strings {
   public static <T> void toSentence(StringBuilder builder, Iterable<T> list, Cons2<StringBuilder, T> stringifier) {
     toSentence(builder, list, stringifier, ", ", " and ");
   }
+
   /** Converts a list to a human readable sentence with configurable {@code or} and {@code and} delimiters. */
   public static <T> void toSentence(StringBuilder builder, Iterable<T> list, Cons2<StringBuilder, T> stringifier,
                                     String or, String and) {
-    java.util.Iterator<T> iter = list.iterator();
+    Iterator<T> iter = list.iterator();
     if (!iter.hasNext()) return;
 
     stringifier.get(builder, iter.next());
@@ -720,4 +640,6 @@ public class Strings extends arc.util.Strings {
     }
     return vowels.indexOf(letter) != -1 ^ reversed ? "an" : "a";
   }
+
+
 }

@@ -21,7 +21,6 @@ package fr.zetamap.morecommands.modules.security;
 import arc.Events;
 import arc.math.geom.Vec2;
 import arc.struct.*;
-import arc.util.Structs;
 import arc.util.serialization.Json;
 import arc.util.serialization.JsonValue;
 
@@ -37,10 +36,7 @@ import fr.zetamap.morecommands.misc.Gatekeeper;
 import fr.zetamap.morecommands.misc.MCEvents;
 import fr.zetamap.morecommands.misc.Players;
 import fr.zetamap.morecommands.module.AbstractSaveableModule;
-import fr.zetamap.morecommands.util.DurationFormatter;
-import fr.zetamap.morecommands.util.IntervalProv;
-import fr.zetamap.morecommands.util.JsonSettings;
-import fr.zetamap.morecommands.util.Strings;
+import fr.zetamap.morecommands.util.*;
 
 
 public class PunishmentsModule extends AbstractSaveableModule {
@@ -610,7 +606,7 @@ public class PunishmentsModule extends AbstractSaveableModule {
     });
 
     // Check id
-    int max = Strings.max(byId, i -> i.key); // idk why i can't use #keys()
+    int max = Structs.max(byId, i -> i.key); // idk why i can't use #keys()
     if (!byId.isEmpty() && Punishment.lastId <= max) {
       logger.warn("Invalid 'last-id' value! The field has been modified to the highest punishment id.");
       Punishment.lastId = max+1;

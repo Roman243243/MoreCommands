@@ -34,8 +34,7 @@ import mindustry.server.ServerControl;
 import fr.zetamap.morecommands.command.ServerCommandHandler;
 import fr.zetamap.morecommands.module.AbstractSaveableModule;
 import fr.zetamap.morecommands.module.ModuleRegistry;
-import fr.zetamap.morecommands.util.JsonSettings;
-import fr.zetamap.morecommands.util.Strings;
+import fr.zetamap.morecommands.util.*;
 
 
 public class CommandsModule extends AbstractSaveableModule {
@@ -206,8 +205,8 @@ public class CommandsModule extends AbstractSaveableModule {
       } else if (args.length == 0) {
         int clientEnabled = clientCommands.count(c -> !isClientCommandDisabled(c.text)),
             serverEnabled = serverCommands.count(c -> !isServerCommandDisabled(c.text)),
-            clientLength = clientHandler.prefix.length() + Strings.max(clientCommands, c -> c.text.length()) + 5,
-            serverLength = serverHandler.prefix.length() + Strings.max(serverCommands, c -> c.text.length()) + 5;
+            clientLength = clientHandler.prefix.length() + Structs.max(clientCommands, c -> c.text.length()) + 5,
+            serverLength = serverHandler.prefix.length() + Structs.max(serverCommands, c -> c.text.length()) + 5;
         Seq<String> left = new Seq<>(serverCommands.size+1), right = new Seq<>(clientCommands.size+1);
 
          left.add("Server commands: [total: &fb&lb" + serverCommands.size + "&fr, enabled: &fb&lb" + serverEnabled +"&fr]");
@@ -336,7 +335,7 @@ public class CommandsModule extends AbstractSaveableModule {
   private static Seq<String> Strings_columnify(int gap, Seq<String> left, Seq<String> right) {
     Seq<Integer> sl = left.map(l -> arc.util.Log.removeColors(l).length()),
                  sr = right.map(l -> arc.util.Log.removeColors(l).length());
-    int l = gap + Strings.max(sl, e -> e), r = gap + Strings.max(sr, e -> e);
+    int l = gap + Structs.max(sl, e -> e), r = gap + Structs.max(sr, e -> e);
     String lf = " ".repeat(l),
            rf = " ".repeat(r);
     Seq<String> arr = left;

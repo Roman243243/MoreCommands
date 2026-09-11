@@ -30,7 +30,6 @@ import mindustry.world.blocks.ConstructBlock;
 import fr.zetamap.morecommands.Modules;
 import fr.zetamap.morecommands.PlayerData;
 import fr.zetamap.morecommands.command.ClientCommandHandler;
-import fr.zetamap.morecommands.misc.Players;
 import fr.zetamap.morecommands.module.AbstractModule;
 import fr.zetamap.morecommands.modules.selector.SelectorParser;
 import fr.zetamap.morecommands.util.Strings;
@@ -68,16 +67,9 @@ public class GodmodeModule extends AbstractModule {
       PlayerData player = PlayerData.get(e.player);
       if (player == null) return;
       if (player.lastUnit != null && player.lastUnit.health == Float.POSITIVE_INFINITY) player.lastUnit.clampHealth();
-      if (player.inGodmode && !player.player.dead()) e.unit.health = Float.POSITIVE_INFINITY;
+      if (player.inGodmode && e.unit != null) e.unit.health = Float.POSITIVE_INFINITY;
       player.lastUnit = e.unit;
     });
-
-    // I need that to know when a player respawn to the core =/
-    //TODO: find another way
-    Events.run(EventType.Trigger.beforeGameUpdate, () ->
-      PlayerData.each(p -> p.inGodmode && !p.player.dead(),
-                      p -> p.player.unit().health = Float.POSITIVE_INFINITY)
-    );
 
     // Instant unit kill
     Events.on(EventType.UnitDamageEvent.class, e -> {
@@ -101,7 +93,7 @@ public class GodmodeModule extends AbstractModule {
     handler.addAdmin("godmode", "[on|off] [player|selector...]", "[coral][[[scarlet]God[]]: [gold]I'm divine!",
     (args, player) -> {
       if (args.length == 0) {
-        Players.info(player, "Godmode is currently [accent]@[].", player.inGodmode ? "enabled" : "disabled");
+        player.info("Godmode is currently @.", player.inGodmode ? "enabled" : "disabled");
         return;
       }
 
@@ -109,16 +101,16 @@ public class GodmodeModule extends AbstractModule {
       if (Strings.isTrue(args[0])) enable = true;
       else if (Strings.isFalse(args[0])) enable = false;
       else {
-        Players.err(player, "Invalid argument! Must be 'on' or 'off'.");
+        player.err("Invalid argument! Must be '@' or '@'.", "on", "off");
         return;
       }
 
       if (args.length == 1) {
         if (enable == player.inGodmode)
-          Players.err(player, "Godmode already [orange]@[].", enable ? "enabled" : "disabled");
+          player.err("Godmode already @.", enable ? "enabled" : "disabled");
         else {
           setGodmode(player, enable);
-          Players.ok(player, "Godmode [accent]@[].", enable ? "enabled" : "disabled");
+          player.ok("Godmode @.", enable ? "enabled" : "disabled");
         }
         return;
       }
@@ -128,15 +120,15 @@ public class GodmodeModule extends AbstractModule {
       int[] count = {0};
       selector.execute((p, u) -> {
         if (enable == p.inGodmode)
-          Players.warn(player, "Godmode already [accent]@[] for @[orange].", enable ? "enabled" : "disabled", p.getName());
+          player.warn("Godmode already @ for @.", enable ? "enabled" : "disabled", p.getName());
         else {
           count[0]++;
           setGodmode(p, enable);
           if (p == player) return;
-          Players.warn(p, "Godmode [accent]@[] by @[orange].", enable ? "enabled" : "disabled", player.getName());
+          p.warn("Godmode @ by @.", enable ? "enabled" : "disabled", player.getName());
         }
       });
-      Players.ok(player, "@ godmode for [accent]@[] players.", enable ? "Enabled" : "Disabled", count[0]);
+      player.ok("@ godmode for @ players.", enable ? "Enabled" : "Disabled", count[0]);
     });
   }
 }

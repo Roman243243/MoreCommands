@@ -55,7 +55,7 @@ public class ManagerModule extends AbstractModule {
   @Override
   protected void initImpl() {
     //TODO: find a way to ensure that protected modules are not disabled before loading this one.
-    //      As it can be force disabled by editing the config
+    //      As it can also be force disabled by editing the config
     protectedModules.each(n -> {
       Module m = ModuleRegistry.get(n);
       if (m != null) ModuleRegistry.enable(m);

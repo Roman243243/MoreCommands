@@ -22,7 +22,6 @@ import arc.math.Angles;
 import arc.math.Mathf;
 import arc.struct.OrderedMap;
 import arc.struct.Seq;
-import arc.util.Structs;
 import arc.util.Timer;
 import arc.util.Tmp;
 
@@ -38,9 +37,7 @@ import fr.zetamap.morecommands.command.*;
 import fr.zetamap.morecommands.misc.Players;
 import fr.zetamap.morecommands.module.AbstractSaveableModule;
 import fr.zetamap.morecommands.modules.selector.SelectorParser;
-import fr.zetamap.morecommands.util.JsonSettings;
-import fr.zetamap.morecommands.util.Logger;
-import fr.zetamap.morecommands.util.Strings;
+import fr.zetamap.morecommands.util.*;
 
 
 public class EffectsModule extends AbstractSaveableModule {
@@ -200,7 +197,7 @@ public class EffectsModule extends AbstractSaveableModule {
               size = p.effect.needsResizement ? effectSizeCap : rotationBack;
         Call.effect/*Reliable*/(p.effect.effect, x, y, size, Pal.accent);
       }
-    }), 0.1f, 0.1f); //0.064f
+    }), 0.06f, 0.06f);
   }
 
   @Override
@@ -241,7 +238,7 @@ public class EffectsModule extends AbstractSaveableModule {
     handler.add("effect", "[reset|id|name] [on|off|admins|everyone]", "Manage the particles effects.",
     args -> {
       if (args.length == 0) {
-        int length = Strings.max(all.entries(), e -> e.key.length() + Mathf.digits(e.value.id) + 14);
+        int length = Structs.max(all.entries(), e -> e.key.length() + Mathf.digits(e.value.id) + 14);
         logger.info("Effects list: [total: @, enabled: @, admins: @]", all.size,
                     all.orderedKeys().count(this::isEnabled),
                     all.orderedKeys().count(this::isAdminOnly));
@@ -297,7 +294,7 @@ public class EffectsModule extends AbstractSaveableModule {
                 "[#ff0000]R[#ff7f00]A[#ffff00]I[#00ff00]N[#0000ff]B[#2e2b5f]O[#8B00ff]W[#ff0000]![#ff7f00]!",
     (args, player) -> {
       if (args.length == 0) {
-        Players.info(player, "Rainbow mode is currently [accent]@[].", player.rainbowed ? "enabled" : "disabled");
+        player.info("Rainbow mode is currently @.", player.rainbowed ? "enabled" : "disabled");
         return;
       }
 
@@ -306,22 +303,22 @@ public class EffectsModule extends AbstractSaveableModule {
       else if (Strings.isTrue(args[0])) enable = true;
       else if (Strings.isFalse(args[0])) enable = false;
       else {
-        Players.err(player, "Invalid argument! Must be 'on' or 'off'.");
+        player.err("Invalid argument! Must be '@' or '@'.", "on", "off");
         return;
       }
 
       if (args.length == 1) {
         if (player.vanished()) {
-          Players.err(player.player, "Can't start rainbow mode in vanish mode!");
+          player.err("Can't start rainbow mode in vanish mode!");
           return;
         }
         player.setRainbow(enable);
         if (!force) player.effect = null;
-        Players.ok(player, "Rainbow effect [accent]@[].", player.rainbowed ? "enabled" : "disabled");
+        player.ok("Rainbow effect @.", player.rainbowed ? "enabled" : "disabled");
         return;
 
       } else if (!player.admin()) {
-        Players.errArgUseDenied(player);
+        player.errArgUseDenied();
         return;
       }
 
@@ -329,16 +326,15 @@ public class EffectsModule extends AbstractSaveableModule {
       if (selector == null) return;
       selector.execute((p, u) -> {
         if (enable && p.vanished()) {
-          Players.warn(player, "Can't start rainbow mode for @[orange] because he's in vanish mode!", p.getName());
+          player.warn("Can't start rainbow mode for @ because he's in vanish mode!", p.getName());
           return;
         }
         p.setRainbow(enable);
         if (p == player) return;
-        Players.ok(p, "Rainbow effect [accent]@[] by @[green].", p.rainbowed ? "enabled" : "disabled", player.getName());
+        p.ok("Rainbow effect @ by @.", p.rainbowed ? "enabled" : "disabled", player.getName());
       });
-      if (selector.noTargetFound()) Players.ok(player, "No players was selected.");
-      else Players.ok(player, "[accent]@[] rainbow effect @[green].", enable ? "Enabled" : "Disabled",
-                      selector.formatMessage("for", true));
+      if (selector.noTargetFound()) player.ok("No players was selected.");
+      else player.ok("@ rainbow effect @.", enable ? "Enabled" : "Disabled", "[]" + selector.formatMessage("for", true));
     });
 
     handler.add("effect", "[stop|list|search|name|id] [page|selector|player...]", "Gives you a particle effect.",
@@ -347,18 +343,18 @@ public class EffectsModule extends AbstractSaveableModule {
 
       if (args.length == 0 || (stop && args.length == 1)) {
         if (player.vanished()) {
-          Players.err(player, "Can't start an effect in vanish mode!");
+          player.err("Can't start an effect in vanish mode!");
           return;
         } else if (stop && player.effect == null) {
-          Players.err(player, "No started particle efffect.");
+          player.err("No started particle efffect.");
           return;
         }
 
         player.effect = stop || player.effect != null ? null : random(false, player.admin());
-        if (player.effect == null) Players.ok(player, "Removed particle effect.");
+        if (player.effect == null) player.ok("Removed particle effect.");
         else {
           player.setRainbow(false); // Particles + rainbow bubbles are a little bit weird
-          Players.ok(player, "Randomized particle effect to [accent]@[] ([accent]@[]).", player.effect.name, player.effect.id);
+          player.ok("Randomized particle effect to @ (@).", player.effect.name, player.effect.id);
         }
         return;
 
@@ -368,7 +364,7 @@ public class EffectsModule extends AbstractSaveableModule {
         if (args.length > 1) page = Strings.parseInt(args[1]);
 
         if (page == Integer.MIN_VALUE) {
-          Players.err(player, "'[orange]page[]' must be a number.");
+          player.err("'@' must be a number.", "page");
           return;
         }
 
@@ -379,11 +375,11 @@ public class EffectsModule extends AbstractSaveableModule {
         }
 
         if (page < 1 || page > pages) {
-          Players.err(player, "'[orange]page[]' must be between [orange]1[] and [orange]@[].", pages);
+          player.err("'@' must be between @ and @.", "page", "1", pages);
           return;
         }
 
-        Players.info(player, "[orange]---- [gold]Effect list [lightgray]@[gray]/[]@ [gray]([]@[gray])[][][] ----",
+        Players.warn(player, "---- [gold]Effect list [lightgray]@[gray]/[]@ [gray]([]@[gray])[][][] ----",
                      page, pages, everyoneEffects == null ? all.size : everyoneEffects.size);
         StringBuilder builder = new StringBuilder();
 
@@ -398,16 +394,17 @@ public class EffectsModule extends AbstractSaveableModule {
         } else {
           for (int i=perPage*(page-1), n=Math.min(perPage*page, everyoneEffects.size); i<n; i++) {
             Effects e = everyoneEffects.get(i);
-            builder.append("[lightgray]|[] ").append(e.name).append(" [gray]([lightgray]").append(e.id).append("[])[]\n");
+            builder.append("[lightgray]|[] ").append(e.name).append(" [gray]([lightgray]").append(e.id)
+                   .append("[])[]\n");
           }
         }
 
-        Players.info(player, builder.toString());
+        player.info(builder.toString());
         return;
 
       } else if (args[0].equals("search")) {
         if (args.length == 1) {
-          Players.err(player, "Missing '[orange]name[]' argument.");
+          player.err("Missing '@' argument.", "name");
           return;
         }
 
@@ -418,10 +415,10 @@ public class EffectsModule extends AbstractSaveableModule {
         StringBuilder builder = new StringBuilder();
 
         if (found.isEmpty()) {
-          Players.info(player, "No match found.");
+          player.info("No match found.");
           return;
         }
-        Players.info(player, "Found [accent]@[] matchs:", found.size);
+        player.info("Found @ matchs:", found.size);
 
         if (player.admin()) {
           for (int i=0; i<found.size; i++, n++) {
@@ -430,7 +427,7 @@ public class EffectsModule extends AbstractSaveableModule {
                    .append("[])[] [orange]/[] ").append(e.disabled() ? "[scarlet]disabled[], " : "[green]enabled[], ")
                    .append(e.adminOnly() ? "[scarlet]admin" : "[green]everyone").append("[][]");
             if (n >= perPage) {
-              Players.info(player, builder.toString());
+              player.info(builder.toString());
               builder.setLength(0);
               n = 0;
             } else builder.append('\n');
@@ -441,13 +438,13 @@ public class EffectsModule extends AbstractSaveableModule {
             Effects e = get(found.get(i));
             builder.append("[lightgray]|[] ").append(e.name).append(" [gray]([lightgray]").append(e.id).append("[])[]");
             if (n >= perPage) {
-              Players.info(player, builder.toString());
+              player.info(builder.toString());
               builder.setLength(0);
               n = 0;
             } else builder.append('\n');
           }
         }
-        if (n > 0) Players.info(player, builder.toString());
+        if (n > 0) player.info(builder.toString());
         return;
       }
 
@@ -459,35 +456,34 @@ public class EffectsModule extends AbstractSaveableModule {
           e = get(id);
 
           if (e == null) {
-            Players.err(player, id == Integer.MIN_VALUE ? "No effect named '[orange]@[]' found." :
-                                                          "No effect with id '[orange]@[]' found.", args[0]);
+            player.err("No effect " + (id == Integer.MIN_VALUE ? "named" : "with id") + " '@' found.", args[0]);
             return;
           }
         }
         effect = e;
 
         if (effect.disabled()) {
-          Players.err(player, "This particle effect is disabled.");
+          player.err("This particle effect is disabled.");
           return;
         } else if (effect.adminOnly() && !player.admin()) {
-          Players.err(player, "This particle effect is only for admins.");
+          player.err("This particle effect is only for admins.");
           return;
 
         } else if (args.length == 1) {
           if (player.vanished()) {
-            Players.err(player, "Can't start an effect in vanish mode!");
+            player.err("Can't start an effect in vanish mode!");
             return;
           }
 
           player.setRainbow(false); // Effect + rainbow is a little bit weird
           player.effect = effect;
-          Players.ok(player, "Starting particle effect [accent]@[] ([accent]@[]).", effect.name, effect.id);
+          player.ok("Starting particle effect @ (@).", effect.name, effect.id);
           return;
         }
       } else effect = null;
 
       if (!player.admin()) {
-        Players.errArgUseDenied(player);
+        player.errArgUseDenied();
         return;
       }
 
@@ -495,7 +491,7 @@ public class EffectsModule extends AbstractSaveableModule {
       if (selector == null) return;
       selector.execute((p, u) -> {
         if (!stop && p.vanished()) {
-          Players.err(player, "Can't start an effect for @[scarlet] because he's in vanish mode!", p.getName());
+          player.err("Can't start an effect for @ because he's in vanish mode!", p.getName());
           return;
         } else if (stop && p.effect == null) return;
 
@@ -503,15 +499,13 @@ public class EffectsModule extends AbstractSaveableModule {
         if (p.effect != null) p.rainbowed = false; // Effect + rainbow is a little bit weird
         if (p == player) return;
 
-        if (p.effect == null) Players.ok(p, "Particle effect removed by @[green].", player.getName());
-        else Players.ok(p, "Particle effect [accent]@[] ([accent]@[]) started by @[green].", p.effect.name,
-                        p.effect.id, player.getName());
+        if (p.effect == null) p.ok("Particle effect removed by @.", player.getName());
+        else p.ok("Particle effect @ (@) started by @.", p.effect.name, p.effect.id, player.getName());
       });
-      if (selector.noTargetFound()) Players.ok(player, "No player was selected.");
-      else if (effect == null) Players.ok(player, "Removed particle effect @[green].",
-                                          selector.formatMessage("from", true));
-      else Players.ok(player, "Starting particle effect [accent]@[] ([accent]@[]) @[green].", effect.name, effect.id,
-                      selector.formatMessage("for", true));
+      if (selector.noTargetFound()) player.ok("No player was selected.");
+      else if (effect == null) player.ok("Removed particle effect @.", "[]" + selector.formatMessage("from", true));
+      else player.ok("Starting particle effect @ (@) @.", effect.name, effect.id,
+                     "[]" + selector.formatMessage("for", true));
     });
 
     //IDEA: /sound

@@ -168,7 +168,7 @@ public class Autosaver {
     String name();
     boolean modified();
     void save();
-    void forceSave(); //TODO: default to save()
+    default void forceSave() { save(); }
   }
 
 

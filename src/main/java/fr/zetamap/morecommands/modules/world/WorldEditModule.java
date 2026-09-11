@@ -149,7 +149,7 @@ public class WorldEditModule extends AbstractModule {
 
   public void cancelMapCleanConfirmation() {
     if (cleanTask != null) cleanTask.cancel();
-    if (cleanupTriggerer != null) Players.warn(cleanupTriggerer, "Cleanup confirmation cancelled.");
+    if (cleanupTriggerer != null) cleanupTriggerer.warn("Cleanup confirmation cancelled.");
     cleanupTriggerer = null;
     hardClean = false;
   }
@@ -209,7 +209,7 @@ public class WorldEditModule extends AbstractModule {
     try {
       return new JsonReader().parse(Strings.join(" ", args, from, to));
     } catch (Exception e) {
-      Players.err(player, Strings.neatError(e, false));
+      player.err(Strings.neatError(e, false));
       return null;
     }
   }
@@ -225,10 +225,10 @@ public class WorldEditModule extends AbstractModule {
         build.team = team;
         MindustryJson.get().readFields(build, data);
       } catch (Exception e) {
-        Players.err(player, Strings.neatError(e, false));
+        player.err(Strings.neatError(e, false));
         return false;
       }
-    } else Players.warn(player, "Ignored custom building data because [accent]@[] doesn't create one.", block.name);
+    } else player.warn("Ignored custom building data because @ doesn't create one.", block.name);
     return true;
   }
 
@@ -240,7 +240,7 @@ public class WorldEditModule extends AbstractModule {
       MindustryJson.get().readFields(unit.create(team), data);
       return true;
     } catch (Exception e) {
-      Players.err(player, Strings.neatError(e, false));
+      player.err(Strings.neatError(e, false));
       return false;
     }
   }
@@ -292,10 +292,10 @@ public class WorldEditModule extends AbstractModule {
     (args, player) -> {
       Block block = Vars.content.block(Strings.kebabize(args[0]));
       if (block == null) {
-        Players.err(player, "No block named '[orange]@[]' found.", args[0]);
+        player.err("No block named '@' found.", args[0]);
         return;
       } else if (block instanceof CoreBlock && player.vanished()) {
-        Players.err(player, "You can't build a core in vanish mode!");
+        player.err("You can't build a core in vanish mode!");
         return;
       }
 
@@ -310,7 +310,7 @@ public class WorldEditModule extends AbstractModule {
         tile = Vars.world.tileWorld(dest.pos.x, dest.pos.y);
 
         if (args.length > 0 && (team = Modules.team.getTeam(player, args[0])) == null) {
-          Players.err(player, "Team not found. [lightgray]Use [gray]/team[] to list them.");
+          player.err("Team not found. [lightgray]Use [gray]/team[] to list them.");
           return;
         }
 
@@ -319,12 +319,12 @@ public class WorldEditModule extends AbstractModule {
           if (!checkBuildingData(player, block, team, data)) return;
         }
       } else if (player.player.dead()) {
-        Players.err(player, "Unable to find player position.");
+        player.err("Unable to find player position.");
         return;
       }
 
       if (tile == null) {
-        Players.err(player, "Coordinates out of map bounds.");
+        player.err("Coordinates out of map bounds.");
         return;
       }
       Building last = tile.build;
@@ -333,21 +333,19 @@ public class WorldEditModule extends AbstractModule {
 
       String pronoun = Strings.aOrAn(block.name);
       if (block == Blocks.air)
-        Players.ok(player, "Removed @ at [accent]@,@[].",
-                   last != null ? Strings.aOrAn(last.block.name) + " [accent]" + last.block.name + "[]" : "nothing",
-                   tile.x, tile.y);
+        player.ok("Removed " + (last != null ? Strings.aOrAn(last.block.name) + ' ' : "") + "@ at @[],@.",
+                  last != null ? last.block.name : "nothing", tile.x, tile.y);
       else if (block.hasBuilding())
-        Players.ok(player, "Built @ [accent]@[] at [accent]@,@[] for the [white]@[] team.", pronoun, block.name,
-                   tile.x, tile.y, team.coloredName());
+        player.ok("Built " + pronoun + " @ at @[],@ for the @ team.", block.name, tile.x, tile.y, team.coloredName());
       else
-        Players.ok(player, "Placed @ [accent]@[] block at [accent]@,@[].", pronoun, block.name, tile.x, tile.y);
+        player.ok("Placed " + pronoun + " @ block at @[],@.", block.name, tile.x, tile.y);
 
       if (block.hasBuilding() && data != null && tile.build != null && tile.build.isValid()) {
         try {
           updateBuilding(tile, data);
-          Players.ok(player, "Succesfully applied custom building data.");
+          player.ok("Succesfully applied custom building data.");
         } catch (Exception e) {
-          Players.err(player, "Failed to apply custom building data: \n@", Strings.neatError(e, false));
+          player.err("Failed to apply custom building data: \n@", Strings.neatError(e, false));
         }
       }
     });
@@ -356,10 +354,10 @@ public class WorldEditModule extends AbstractModule {
     (args, player) -> {
       Block block = Vars.content.block(Strings.kebabize(args[0]));
       if (block == null) {
-        Players.err(player, "No block named '[orange]@[]' found.", args[0]);
+        player.err("No block named '@' found.", args[0]);
         return;
       } else if (block instanceof CoreBlock && player.vanished()) {
-        Players.err(player, "You can't build a core in vanish mode!");
+        player.err("You can't build a core in vanish mode!");
         return;
       }
 
@@ -371,7 +369,7 @@ public class WorldEditModule extends AbstractModule {
 
       Team team = args.length == 0 ? player.player.team() : Modules.team.getTeam(player, args[0]);
       if (team == null) {
-        Players.err(player, "Team not found. [lightgray]Use [gray]/team[] to list them.");
+        player.err("Team not found. [lightgray]Use [gray]/team[] to list them.");
         return;
       }
 
@@ -397,7 +395,7 @@ public class WorldEditModule extends AbstractModule {
             Call.deconstructFinish(tile, block, player.player.unit());
           }
         }
-        Players.ok(player, "Removed [accent]@[] blocks from [accent]@,@[] to [accent]@,@[].", count, x, y, xn, yn);
+        player.ok("Removed @ blocks from @[],@ to @[],@.", count, x, y, xn, yn);
 
       } else {
         for (int xx=x, yy; xx<xn; xx+=block.size) {
@@ -410,11 +408,10 @@ public class WorldEditModule extends AbstractModule {
           }
         }
         if (block.hasBuilding())
-          Players.ok(player, "Built [accent]@ @[] from [accent]@,@[] to [accent]@,@[] for the [white]@[] team.",
-                     count, block.name, x, y, xn, yn, team.coloredName());
+          player.ok("Built @ @ from @[],@ to @[],@ for the @ team.", count, block.name, x, y, xn, yn,
+                    team.coloredName());
         else
-          Players.ok(player, "Placed [accent]@ @[] blocks from [accent]@,@[] to [accent]@,@[].", count, block.name,
-                     x, y, xn, yn);
+          player.ok("Placed @ @ blocks from @[],@ to @[],@.", count, block.name, x, y, xn, yn);
       }
 
       if (data == null || !block.hasBuilding()) return;
@@ -435,15 +432,15 @@ public class WorldEditModule extends AbstractModule {
           }
         }
       }
-      if (count > 0) Players.ok(player, "Succesfully applied custom data to [accent]@[] buildings.", count);
-      if (errors > 0) Players.err(player, "Failed to apply custom data to [accent]@[] buildings: \n@", errors,
-                                  Strings.neatError(lastError, false));
+      if (count > 0) player.ok("Succesfully applied custom data to @ buildings.", count);
+      if (errors > 0)
+        player.err("Failed to apply custom data to @ buildings: \n@", errors, Strings.neatError(lastError, false));
     });
 
     handler.addAdmin("core", "<small|medium|big|coreName> [player|x,y] [teamName|~...]", "Build a core.",
     (args, player) -> {
       if (player.vanished()) {
-        Players.err(player, "You can't build a core in vanish mode!");
+        player.err("You can't build a core in vanish mode!");
         return;
       }
 
@@ -461,12 +458,12 @@ public class WorldEditModule extends AbstractModule {
         default:
           core = Vars.content.block("core-" + args[0].toLowerCase());
           if (core == null) {
-            Players.err(player, "No core named '@' found.", args[0]);
+            player.err("No core named '@' found.", args[0]);
             return;
           }
       }
       if (core == null) {
-        Players.err(player, "Unable to find a core evolution for '[orange]@[]' based on the current map.", args[0]);
+        player.err("Unable to find a core evolution for '@' based on the current map.", args[0]);
         return;
       }
 
@@ -480,28 +477,27 @@ public class WorldEditModule extends AbstractModule {
         tile = Vars.world.tileWorld(dest.pos.x, dest.pos.y);
 
         if (args.length > 0 && (team = Modules.team.getTeam(player, args[0])) == null) {
-          Players.err(player, "Team not found. [lightgray]Use [gray]/team[] to list them.");
+          player.err("Team not found. [lightgray]Use [gray]/team[] to list them.");
           return;
         }
       } else if (player.player.dead()) {
-        Players.err(player, "Unable to find player position.");
+        player.err("Unable to find player position.");
         return;
       }
 
       if (tile == null) {
-        Players.err(player, "Coordinates out of map bounds.");
+        player.err("Coordinates out of map bounds.");
         return;
       }
       ConstructBlock.constructed(tile, core, player.player.unit(), (byte)0, team, null);
-      Players.ok(player, "Built a [accent]@[] at [accent]@,@[] for the [white]@[] team.", core.name, tile.x, tile.y,
-                 team.coloredName());
+      player.ok("Built a @ at @[],@ for the @ team.", core.name, tile.x, tile.y, team.coloredName());
     });
 
     handler.addAdmin("spawn", "<unit> [count] [player|x,y] [teamName|~] [unitData...]", "Spawn a unit.",
     (args, player) -> {
       UnitType unit = Vars.content.unit(Strings.kebabize(args[0]));
       if (unit == null) {
-        Players.err(player, "No unit named '[orange]@[]' found.", args[0]);
+        player.err("No unit named '@' found.", args[0]);
         return;
       }
 
@@ -509,7 +505,7 @@ public class WorldEditModule extends AbstractModule {
       if (args.length > 1) {
         count = Strings.parseInt(args[1]);
         if (count < 1) {
-          Players.err(player, "'[orange]count[]' must be a number greater than [orange]1[].");
+          player.err("'@' must be a number greater than @.", "count", "1");
           return;
         }
       }
@@ -525,7 +521,7 @@ public class WorldEditModule extends AbstractModule {
         pos = dest.pos;
 
         if (args.length > 0 && (team = Modules.team.getTeam(player, args[0])) == null) {
-          Players.err(player, "Team not found. [lightgray]Use [gray]/team[] to list them.");
+          player.err("Team not found. [lightgray]Use [gray]/team[] to list them.");
           return;
         }
 
@@ -534,12 +530,12 @@ public class WorldEditModule extends AbstractModule {
           if (!checkUnitData(player, unit, team, data)) return;
         }
       } else if (player.player.dead()) {
-        Players.err(player, "Unable to find player position.");
+        player.err("Unable to find player position.");
         return;
       }
 
       if (team.cores().isEmpty()) {
-        Players.err(player, "No core available in the [white]@[] team.", team.coloredName());
+        player.err("No core available in the @ team.", team.coloredName());
         return;
       }
 
@@ -567,19 +563,19 @@ public class WorldEditModule extends AbstractModule {
           errors++;
         }
       }
-      if (count > 0) Players.ok(player, "Succesfully applied custom data to [accent]@[] units.", count);
-      if (errors > 0) Players.err(player, "Failed to apply custom data to [accent]@[] units: \n@", errors,
-                                  Strings.neatError(lastError, false));
+      if (count > 0) player.ok("Succesfully applied custom data to @ units.", count);
+      if (errors > 0)
+        player.err("Failed to apply custom data to @ units: \n@", errors, Strings.neatError(lastError, false));
     });
 
     handler.addAdmin("transform", "<unit> [player|selector] [unitData...]", "Transform a player unit.",
     (args, player) -> {
       UnitType unit = Vars.content.unit(Strings.kebabize(args[0]));
       if (unit == null) {
-        Players.err(player, "No unit named '[orange]@[]' found.", args[0]);
+        player.err("No unit named '@' found.", args[0]);
         return;
       } else if (player.player.team().cores().isEmpty()) {
-        Players.err(player, "No core available in the [white]@[] team.", player.player.team().coloredName());
+        player.err("No core available in the @ team.", player.player.team().coloredName());
         return;
       }
 
@@ -587,8 +583,8 @@ public class WorldEditModule extends AbstractModule {
 
       if (args.length == 1) {
         if (transformPlayer(player, unit) != null)
-          Players.ok(player, "Transformed to @ [accent]@[].", pronoun, unit.name);
-        else Players.err(player, "Unable to transform you to @ [orange]@[]. Unit cap reached?", pronoun, unit.name);
+          player.ok("Transformed to " + pronoun + " @.", unit.name);
+        else player.err("Unable to transform you to " + pronoun + " @. Unit cap reached?", unit.name);
         return;
       }
 
@@ -605,15 +601,13 @@ public class WorldEditModule extends AbstractModule {
       selector.execute((p, u) -> {
         transformed.add(u = transformPlayer(p, unit));
         if (u == null || player == p) return;
-        Players.warn(p, "You have been transformed to @ [accent]@[] by @[orange].", pronoun, unit.name,
-                     player.getName());
+        p.warn("You have been transformed to " + pronoun + " @ by @.", unit.name,player.getName());
       });
       int invalids = transformed.count(u -> u == null);
       selector.selected.set(transformed.removeAll(u -> u == null));
-      Players.ok(player, selector.formatMessage("Transformed", true) + "[green].");
+      player.ok(selector.formatMessage("Transformed", true) + "[green].");
       if (invalids > 0)
-        Players.err(player, "Unable to transform [orange]@ players[] to @ [orange]@[].  Unit cap reached?", invalids,
-                    pronoun, unit.name);
+        player.err("Unable to transform @ @ to " + pronoun + " @.  Unit cap reached?", invalids, "players", unit.name);
 
       if (data == null || transformed.isEmpty()) return;
       int count = 0, errors = 0;
@@ -628,15 +622,15 @@ public class WorldEditModule extends AbstractModule {
           errors++;
         }
       }
-      if (count > 0) Players.ok(player, "Succesfully applied custom data to [accent]@[] units.", count);
-      if (errors > 0) Players.err(player, "Failed to apply custom data to [accent]@[] units: \n@", errors,
-                                  Strings.neatError(lastError, false));
+      if (count > 0) player.ok("Succesfully applied custom data to @ units.", count);
+      if (errors > 0)
+        player.err("Failed to apply custom data to @ units: \n@", errors, Strings.neatError(lastError, false));
     });
 
     handler.addAdmin("kill", "[player|selector...] ", "Kill a player or a unit.", (args, player) -> {
       if (args.length == 0) {
         if (!player.player.dead()) player.player.unit().kill();
-        Players.ok(player, "Killed [accent]yourself[].");
+        player.ok("Killed @.", "yourself");
         return;
       }
 
@@ -645,66 +639,63 @@ public class WorldEditModule extends AbstractModule {
 
       selector.execute((p, u) -> {
         u.kill();
-        if (p != null && p != player) Players.warn(p, "You have been killed by @[orange].", player.getName());
+        if (p != null && p != player) p.warn("You have been killed by @.", player.getName());
       });
-      Players.ok(player, selector.formatMessage("Killed", true) + "[green].");
+      player.ok(selector.formatMessage("Killed", true) + "[green].");
     });
 
     handler.addAdmin("clear-map", "[hard|y|n]", "Kill all units and blocks, except cores, on the map.",
     (args, player) -> {
       if (cleanupTriggerer != null) {
         if (cleanupTriggerer != player) {
-          Players.err(player, "@[scarlet] already triggered a cleanup. \n"
-                            + "He/She must to confirm/cancel it or wait a little before auto cancellation.",
-                      cleanupTriggerer.getName());
+          player.err("@ already triggered a cleanup. \nHe/She must to confirm/cancel it before auto cancellation.",
+                     cleanupTriggerer.getName());
           return;
         } else if (args.length == 0) {
-          Players.err(player, "Please confirm, or not, the operation. "
-                            + "Use [orange]/clear-map y[] or [orange]/clear-map n[].");
+          player.err("Please confirm, or not, the operation. Use @ or @.", "/clear-map y", "/clear-map n");
           return;
         }
 
         // Manual check to only accept "yes" or "no" replies
         switch (args[0]) {
           case "y": case "yes":
-            Players.ok(player, "Cleaning map.");
+            player.ok("Cleaning map.");
             confirmMapClean(true);
             return;
           case "n": case "no":
             cancelMapCleanConfirmation();
             return;
           default:
-            Players.err(player, "Invalid argument! Must be 'y' or 'n'.");
+            player.err("Invalid argument! Must be '@' or '@'.", "y", "n");
             return;
         }
       }
 
       boolean hard = false;
       if (args.length == 1 && !(hard = args[0].equals("hard"))) {
-        Players.err(player, "No cleaning is awaiting confirmation.");
+        player.err("No cleaning is awaiting confirmation.");
         return;
       }
 
       scheludeMapCleanConfirmation(player, hard, 10); // 10 seconds before auto cancellation
-      Players.info(player, "\nAre you sure to start a map cleanup? [orange]This can produce lot of lags[].\n"
-                         + "Use [accent]/clear-map y[] or [accent]/clear-map n[] to confirm or cancel the operation.");
-      Players.warn(player, "The operation will be automatically canceled after 10 seconds.");
+      player.info("\nAre you sure to start a map cleanup? [orange]This can produce lot of lags[].\n"
+                + "Use @ or @ to confirm or cancel the operation.", "/clear-map y", "/clear-map n");
+      player.warn("The operation will be automatically canceled after @.", "10 seconds");
     });
 
     handler.addAdmin("weather", "[clear|weatherName] [intensity] [inf|duration]", "Control map weather.",
     (args, player) -> {
       if (args.length == 0) {
         StringBuilder builder = new StringBuilder();
-        if (Groups.weather.isEmpty()) {
+        if (Groups.weather.isEmpty())
           builder.append("No current weathers");
-        } else {
-          Seq<Weather> weathers = new Seq<>();
-          Groups.weather.each(w -> weathers.add/*Unique*/(w.weather));
-          builder.append("Current weathers are: ").append(weathers.toString(", ", w -> "[accent]" + w.name + "[]"));
-        }
+        else
+          builder.append("Current weathers are: ")
+                 .append(Groups.weather.copy().toString(", ", w -> "[accent]" + w.weather.name + "[]"));
+
         builder.append("\nAvailable are: [accent]clear[], ")
                .append(Vars.content.weathers().toString(", ", w -> "[accent]" + w.name + "[]"));
-        Players.info(player, builder.toString());
+        player.info(builder.toString());
         return;
 
       } else if (args[0].equals("clear")) {
@@ -712,13 +703,13 @@ public class WorldEditModule extends AbstractModule {
         Groups.weather.each(w -> w.life(1f));
         // Weathers are duplicated for the client, we need to resync all entities
         sendWorld(); //sendEntitySnapshot();
-        Players.ok(player, "Removed all weather status.");
+        player.ok("Removed all weather status.");
         return;
       }
 
       Weather weather = Vars.content.weather(Strings.kebabize(args[0]));
       if (weather == null) {
-        Players.err(player, "No weather named '[orange]@[]' found.", args[0]);
+        player.err("No weather named '@' found.", args[0]);
         return;
       }
 
@@ -727,7 +718,7 @@ public class WorldEditModule extends AbstractModule {
       if (args.length > 1) {
         intensity = Strings.parseInt(args[1]);
         if (intensity < 0 || intensity > 100) {
-          Players.err(player, "'[orange]intensity[]' must be a number between [orange]0[] and [orange]100[].");
+          player.err("'@' must be a number between @ and @.", "intensity", "0", "100");
           return;
         }
       }
@@ -735,19 +726,17 @@ public class WorldEditModule extends AbstractModule {
       if (args.length > 2) {
         duration = args[2].equals("inf") ? Float.POSITIVE_INFINITY : Strings.parseInt(args[2]);
         if (duration < 0) {
-          Players.err(player, "'[orange]duration[]' must be a positive number of seconds, "
-                            + "or '[orange]inf[]' for an infinite duration.");
+          player.err("'@' must be a positive number of seconds, or '@' for an infinite duration.", "duration", "inf");
           return;
         }
       }
 
       weather.create(intensity / 100f, duration * 60f);
       if (duration == Float.POSITIVE_INFINITY)
-        Players.ok(player, "Weather [accent]@[] created with [accent]@%[] of intensity [accent]forever[].",
-                   weather.name, intensity);
+        player.ok("Weather @ created with @ of intensity @.", weather.name, intensity + "%", "forever");
       else
-        Players.ok(player, "Weather [accent]@[] created with [accent]@%[] of intensity for [accent]@[].",
-                   weather.name, intensity, DurationFormatter.format((long)(duration * 1000)));
+        player.ok("Weather @ created with @ of intensity for @.", weather.name, intensity + "%",
+                  DurationFormatter.format((long)(duration * 1000)));
     });
 
     //IDEA: /time, /patch

@@ -354,8 +354,10 @@ public class JsonSettings implements Autosaver.Saveable {
 
   /** Clears all preference values. */
   public synchronized void clear() {
+    boolean wasNotEmpty = values.notEmpty();
     values.clear();
-    setModified();
+    simple.clear();
+    if (wasNotEmpty) setModified();
   }
 
   public synchronized Iterable<String> keys() {
@@ -375,8 +377,10 @@ public class JsonSettings implements Autosaver.Saveable {
   }
 
   public synchronized void remove(String name) {
+    boolean wasPresent = has(name);
     values.remove(name);
-    setModified();
+    simple.remove(name);
+    if (wasPresent) setModified();
   }
 
   /**
@@ -411,13 +415,13 @@ public class JsonSettings implements Autosaver.Saveable {
   public synchronized <K, E> void put(String name, Class<E> elementType, Class<K> keyType, Object value) {
     // Store primitive, null and JsonValue values directly instead of converting it to JsonValue
     if (value == null || isKnownType(value.getClass())) {
-      simple.put(name, value);
+      Object old = simple.put(name, value);
       values.put(name, null); // reserve the key
-      setModified();
+      if (value == null || value != old) setModified();
       return;
     } else if (value instanceof JsonValue) {
-      values.put(name, (JsonValue)value);
-      setModified();
+      Object old = values.put(name, (JsonValue)value);
+      if (value != old) setModified();
       return;
     }
 

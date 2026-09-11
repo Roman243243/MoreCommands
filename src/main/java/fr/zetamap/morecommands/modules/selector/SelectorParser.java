@@ -179,7 +179,7 @@ public class SelectorParser {
       SelectorParser p = new SelectorParser(executor, args, from, to, onlyPlayers);
       if (p.byPlayer && p.noTargetFound()) {
         if (executor == null) throw new IllegalArgumentException("Player not found");
-        else Players.errPlayerNotFound(executor);
+        else executor.errPlayerNotFound();
       }
       else return p;
     } catch (Exception e) {
@@ -190,7 +190,7 @@ public class SelectorParser {
         message = quotes.matcher(message).replaceAll(executor == null ? "'&fr&lb$1&fr'" : "'[orange]$1[]'");
       }
       if (executor == null) throw new IllegalArgumentException(message);
-      else Players.err(executor, message);
+      else executor.err(message);
     }
     return null;
   }

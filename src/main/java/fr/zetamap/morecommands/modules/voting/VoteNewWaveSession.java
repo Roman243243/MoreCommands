@@ -20,7 +20,6 @@ package fr.zetamap.morecommands.modules.voting;
 
 import fr.zetamap.morecommands.Modules;
 import fr.zetamap.morecommands.PlayerData;
-import fr.zetamap.morecommands.misc.Players;
 import fr.zetamap.morecommands.util.DurationFormatter;
 
 
@@ -32,18 +31,17 @@ public class VoteNewWaveSession extends PlayerVoteSession<Integer> {
   @Override
   public boolean canStart(PlayerData player, Integer wave) {
     if (PlayerData.size() < 2 && !player.admin()) {
-      Players.err(player, "At least [orange]2[] players are required to start a vote.");
+      player.err("At least @ are required to start a vote.", "2 players");
       return false;
     } else if (started()) {
-      Players.err(player, "A vote to run [orange]@[] is already in progress!\n"
-                        + "Type [orange]/vnw y[] or [orange]/vnw n[] to agree or not.", stringObjective());
+      player.err("A vote to run @ is already in progress! \nType @ or @ to agree or not.", stringObjective(),
+                 "/vnw y", "/vnw n");
       return false;
     } else if (waitRemaining() > 0) {
-      Players.err(player, "You must wait [orange]@[] before able to restart a vote.",
-                  DurationFormatter.format(waitRemaining()));
+      player.err("You must wait @ before able to restart a vote.", DurationFormatter.format(waitRemaining()));
       return false;
     } else if (wave < 1) {
-      Players.err(player, "Invalid number of wave. Must be greater than [orange]1[].");
+      player.err("Invalid number of wave. Must be greater than @.", "1");
       return false;
     }
     return true;
@@ -57,10 +55,10 @@ public class VoteNewWaveSession extends PlayerVoteSession<Integer> {
   @Override
   public boolean canVote(PlayerData player) {
     if (!started()) {
-      Players.err(player, "No vote session in progress.");
+      player.err("No vote session in progress.");
       return false;
     } else if (voted(player) != null) {
-      Players.info(player, "You already voted to run [accent]@[].", stringObjective());
+      player.info("You already voted to run @.", stringObjective());
       return false;
     }
     return true;
@@ -69,10 +67,10 @@ public class VoteNewWaveSession extends PlayerVoteSession<Integer> {
   @Override
   public boolean canStop(PlayerData player) {
     if (!started()) {
-      Players.err(player, "No vote session in progress.");
+      player.err("No vote session in progress.");
       return false;
     } else if (!player.admin()) {
-      Players.errArgUseDenied(player);
+      player.errArgUseDenied();
       return false;
     }
     return true;

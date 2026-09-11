@@ -72,7 +72,7 @@ public class VotingModule extends AbstractModule {
       Events.fire(new MCEvents.VoteKickEscapeEvent(context.by, player, previous, context.reason));
 
       // Notify player and online admins
-      Players.warn(player, "You tried to escape a votekick! The punishment has been doubled.");
+      player.warn("You tried to escape a votekick! The punishment has been doubled.");
       PlayerData.each(PlayerData::admin, p ->
         Players.warn(p, "@ [orange] tried to escape a votekick! "
                       + "[gray]Kick duration: [lightgray]@[] -> [lightgray]@[].",
@@ -110,15 +110,15 @@ public class VotingModule extends AbstractModule {
     handler.add("votekick", "[player] [reason...]", "Vote to kick a player with a valid reason.", (args, player) -> {
       //TODO: make popup instead?
       if (!Config.enableVotekick.bool()) {
-        Players.err(player, "Vote-kick is disabled on this server.");
+        player.err("Vote-kick is disabled on this server.");
         return;
       } else if (!canVote) {
-        Players.err(player, "Votes are disabled for now, please wait.");
+        player.err("Votes are disabled for now, please wait.");
         return;
 
       } else if (args.length == 0) {
         if (PlayerData.size() == 1) {
-          Players.info(player, "No player to votekick.");
+          player.info("No player to votekick.");
           return;
         }
 
@@ -128,21 +128,21 @@ public class VotingModule extends AbstractModule {
             if (player.admin()) builder.append(" [orange]/ [lightgray]").append(p);
             builder.append(" [accent](#").append(p.player.id()).append(")[]\n");
         });
-        Players.info(player, builder.toString());
+        player.info(builder.toString());
         return;
       } else if (!vkSession.canStart(player, null)) return;
 
       Players.SearchResult result = Players.find(args);
-      if (!result.found) Players.errPlayerNotFound(player);
+      if (!result.found) player.errPlayerNotFound();
       else if (result.rest.length == 0)
-        Players.warn(player, "You need a valid reason to kick the player.[] Add a reason after the player name.");
+        player.warn("You need a valid reason to kick the player.[] Add a reason after the player name.");
       else vkSession.start(player, result.player, Strings.join(" ", result.rest));
     });
 
     handler.add("vote", "<y|n|c>", "Vote to kick the current player. Admins can cancel the vote with 'c'.",
     (args, player) -> {
       if (!canVote) {
-        Players.err(player, "Votes are disabled for now, please wait.");
+        player.err("Votes are disabled for now, please wait.");
         return;
       }
 
@@ -150,14 +150,14 @@ public class VotingModule extends AbstractModule {
         case "y", "yes" -> vkSession.yes(player);
         case "n", "no" -> vkSession.no(player);
         case "c", "cancel" -> vkSession.cancel(player);
-        default -> Players.err(player.player, "Vote either 'y' (yes)@ 'n' (no)@.", player.admin() ? ", " : " or",
+        default -> Players.err(player, "Vote either 'y' (yes)@ 'n' (no)@.", player.admin() ? ", " : " or",
                                player.admin() ? " or 'c' (cancel)" : "");
       }
     });
 
     handler.add("maps", "[page]", "List all maps of the server.", (args, player) -> {
       if (args.length == 1 && !Strings.canParseInt(args[0])) {
-        Players.err(player, "'[orange]page[]' must be a number.");
+        player.err("'@' must be a number.", "page");
         return;
       }
 
@@ -167,7 +167,7 @@ public class VotingModule extends AbstractModule {
           pages = Mathf.ceil((float)Vars.maps.all().size / perPage);
 
       if (page > pages || page < 1) {
-        Players.err(player, "'[orange]@[]' must be a number between [orange]@[] and [orange]@[].", "page", "1", pages);
+        player.err("'@' must be a number between @ and @.", "page", "1", pages);
         return;
       }
 
@@ -177,17 +177,18 @@ public class VotingModule extends AbstractModule {
       for (int i=(page-1)*perPage; i < Math.min(perPage*page, Vars.maps.all().size); i++) {
         Map map = Vars.maps.all().get(i);
         builder.append("[orange]  - [green]").append(map.workshop ? '\ue822' : map.custom ? '\ue81d' : '\ue811')
-               .append(" [accent]").append(map.name()).append(" [gray]([lightgray]").append(map.width).append("[]x[lightgray]")
-               .append(map.height).append("[])[]").append(" [white]by [sky]").append(map.author()).append('\n');
+               .append(" [accent]").append(map.name()).append(" [gray]([lightgray]").append(map.width)
+               .append("[]x[lightgray]").append(map.height).append("[])[]").append(" [white]by [sky]")
+               .append(map.author()).append('\n');
       }
       builder.append("[orange]-----------------------");
 
-      Players.info(player, builder.toString());
+      player.info(builder.toString());
     });
 
     handler.add("vnw", "[y|n|c|f|number]", "Vote for sending a new wave.", (args, player) -> {
       if (!canVote) {
-        Players.err(player, "Votes are disabled for now, please wait.");
+        player.err("Votes are disabled for now, please wait.");
         return;
 
       } else if (args.length == 0) {
@@ -201,19 +202,19 @@ public class VotingModule extends AbstractModule {
         case "c", "cancel" -> vnwSession.cancel(player);
         case "f", "force" -> {
           if (vnwSession.started()) vnwSession.force(player);
-          else if (!player.admin()) Players.errArgUseDenied(player);
+          else if (!player.admin()) player.errArgUseDenied();
           else {
             vnwSession.skipCooldown();
-            Players.ok(player, "Cooldown skipped.");
+            player.ok("Cooldown skipped.");
           }
         }
         default -> {
           int waves = Strings.parseInt(args[0]);
           if (waves == Integer.MIN_VALUE) {
-            if (!player.admin()) Players.err(player.player, "Vote either 'y' (yes) or 'n' (no).");
-            else Players.err(player.player, "Vote either 'y' (yes), 'n' (no), 'c' (cancel) or 'f' (force).@",
-                             vnwSession.started() ? "\nOr a number of waves to send." : "");
-          } else if (!player.admin()) Players.errArgUseDenied(player);
+            if (!player.admin()) player.err("Vote either 'y' (yes) or 'n' (no).");
+            else player.err("Vote either 'y' (yes), 'n' (no), 'c' (cancel) or 'f' (force)." +
+                            (vnwSession.started() ? "\nOr a number of waves to send." : ""));
+          } else if (!player.admin()) player.errArgUseDenied();
           else vnwSession.start(player, waves);
         }
       }
@@ -221,7 +222,7 @@ public class VotingModule extends AbstractModule {
 
     handler.add("rtv", "[y|n|c|f|mapName...]", "Vote to change the map.", (args, player) -> {
       if (!canVote) {
-        Players.err(player, "Votes are disabled for now, please wait.");
+        player.err("Votes are disabled for now, please wait.");
         return;
 
       } else if (args.length == 0) {
@@ -235,10 +236,10 @@ public class VotingModule extends AbstractModule {
         case "c", "cancel" -> rtvSession.cancel(player);
         case "f", "force" -> {
           if (rtvSession.started()) rtvSession.force(player);
-          else if (!player.admin()) Players.errArgUseDenied(player);
+          else if (!player.admin()) player.errArgUseDenied();
           else {
             rtvSession.skipCooldown();
-            Players.ok(player, "Cooldown skipped.");
+            player.ok("Cooldown skipped.");
           }
         }
         default -> rtvSession.start(player, args[0]);

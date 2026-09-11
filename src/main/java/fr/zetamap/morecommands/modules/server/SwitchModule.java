@@ -32,7 +32,6 @@ import mindustry.gen.Call;
 import fr.zetamap.morecommands.PlayerData;
 import fr.zetamap.morecommands.command.*;
 import fr.zetamap.morecommands.misc.MCEvents;
-import fr.zetamap.morecommands.misc.Players;
 import fr.zetamap.morecommands.module.AbstractSaveableModule;
 import fr.zetamap.morecommands.util.JsonSettings;
 import fr.zetamap.morecommands.util.Strings;
@@ -124,8 +123,8 @@ public class SwitchModule extends AbstractSaveableModule {
   /** Ping the server (if needed) before connecting the player. */
   protected void safeConnect(PlayerData player, Server server) {
     discovery(
-      () -> Players.info(player, "[orange]\ue86a Checking servers..."),
-      () -> Players.info(player, "[orange]\ue837 A discovery is running, please wait..."),
+      () -> player.warn("\ue86a Checking servers..."),
+      () -> player.warn("\ue837 A discovery is running, please wait..."),
       () -> connectPlayer(player, server)
     );
   }
@@ -494,22 +493,22 @@ public class SwitchModule extends AbstractSaveableModule {
   public void registerClientCommands(ClientCommandHandler handler) {
     handler.add("hub", "Connect you to the hub server. [gray]Shortcut of '/switch hub'.[]", (args, player) -> {
       Server s = getHub();
-      if (s == null) Players.err(player, "No hub server defined.");
+      if (s == null) player.err("No hub server defined.");
       else safeConnect(player, s);
     });
 
     handler.add("switch", "[name|alias...]", "Connect you to another server.", (args, player) -> {
       if (servers.isEmpty()) {
-        Players.err(player, "No server defined.");
+        player.err("No server defined.");
         return;
 
       } else if (args.length == 0) {
         discovery(
-          () -> Players.info(player, "[orange]\ue86a Checking servers..."),
-          () -> Players.info(player, "[orange]\ue837 A discovery is running, please wait..."),
+          () -> player.warn("\ue86a Checking servers..."),
+          () -> player.warn("\ue837 A discovery is running, please wait..."),
           () -> {
             //TODO: a popup instead?
-            Players.info(player, "Available servers:");
+            player.info("Available servers:");
             StringBuilder builder = new StringBuilder();
             servers.each((n, s) -> {
               if (!isServerValid(s) || s.adminOnly && !player.admin()) return;
@@ -526,7 +525,7 @@ public class SwitchModule extends AbstractSaveableModule {
               if (s.info.players > 1) builder.append('s');
               builder.append(", ").append(s.info.mapname).append('\n');
             });
-            Players.info(player, builder.toString());
+            player.info(builder.toString());
           }
         );
         return;
@@ -537,7 +536,7 @@ public class SwitchModule extends AbstractSaveableModule {
       if (server == null) server = getByAlias(name);
 
       if (server != null && isServerValid(server)) safeConnect(player, server);
-      else Players.err(player, "No server named '[orange]@[]' found.", name);
+      else player.err("No server named '@' found.", name);
     });
   }
 }

@@ -29,7 +29,6 @@ import mindustry.game.EventType;
 
 import fr.zetamap.morecommands.PlayerData;
 import fr.zetamap.morecommands.command.ServerCommandHandler;
-import fr.zetamap.morecommands.misc.Players;
 import fr.zetamap.morecommands.module.AbstractSaveableModule;
 import fr.zetamap.morecommands.util.DurationFormatter;
 import fr.zetamap.morecommands.util.JsonSettings;
@@ -83,8 +82,7 @@ public class AntiEvadeModule extends AbstractSaveableModule {
       PlayerData player = PlayerData.get(e.player);
       if (player.stripedName.equals(Strings.normalize(name))) return;
       PlayerData.each(p -> p != player, p ->
-        Players.warn(p, "[scarlet]Warning[]: the player @[orange] has changed his name. He was @[orange].",
-                     player.getName(), name));
+        p.warn("[scarlet]Warning[]: the player @ has changed his name. He was @.", player.getName(), name));
     });
 
     Events.on(EventType.PlayerLeave.class, e -> {

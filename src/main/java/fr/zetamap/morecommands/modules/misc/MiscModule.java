@@ -43,11 +43,11 @@ import mindustry.world.blocks.storage.CoreBlock;
 import fr.zetamap.morecommands.Modules;
 import fr.zetamap.morecommands.PlayerData;
 import fr.zetamap.morecommands.command.*;
-import fr.zetamap.morecommands.misc.Players;
 import fr.zetamap.morecommands.module.AbstractModule;
 import fr.zetamap.morecommands.module.ModuleRegistry;
 import fr.zetamap.morecommands.modules.selector.SelectorParser;
 import fr.zetamap.morecommands.util.Strings;
+import fr.zetamap.morecommands.util.Structs;
 
 
 public class MiscModule extends AbstractModule {
@@ -67,7 +67,7 @@ public class MiscModule extends AbstractModule {
   public void exitServer(int status) {
     // Avoid to add a hook for a zero status
     if (status != 0) {
-      // This is hacky but I have no fucking choice, this is so badly made;
+      // This is hacky but I have no fucking choice, this is so badly made.
       // Calling System.exit() while running shutdown hooks leads to an infinite waiting...
       if (Core.app.getMainThread() != null)
         new Thread(() -> {
@@ -140,7 +140,6 @@ public class MiscModule extends AbstractModule {
     if (Vars.state.rules.pvp) Groups.player.each(Vars.netServer::assignTeam);
     else if (wasPvp) Groups.player.each(p -> p.team(Vars.state.rules.defaultTeam));
     Call.setRules(Vars.state.rules);
-    //Modules.worldEdit.sendWorld();
   }
 
   public boolean syncPlayer(PlayerData player) {
@@ -192,7 +191,8 @@ public class MiscModule extends AbstractModule {
       exitServer(true, 2);
     });
 
-    handler.add("speed", "[value]", "Control the game speed. &lrUSE WITH CAUTION!&fr", args -> {
+    handler.add("speed", "[value]", "Control the game speed. &lrClients needs to handle the 'gamespeed' packet.&fr",
+    args -> {
       if (args.length == 0) logger.info("Current game speed: @", gameSpeed);
       else {
         float s = Strings.parseFloat(args[0]);
@@ -295,7 +295,8 @@ public class MiscModule extends AbstractModule {
             Modules.messaging.serverWarn("Gamemode", "Changed to @ by the console.", args[0]);
 
           } catch (IllegalArgumentException e) { logger.err("Unknown gamemode '@'.", args[0]); }
-        } else logger.info("The current gamemode is '@'.", Vars.state.rules.mode().name());
+        } else logger.info("The current gamemode is '@'. Available are: @", Vars.state.rules.mode().name(),
+                           Strings.toSentence(Structs.iterable(Gamemode.all), Gamemode::name));
       } else logger.err("Not playing. Host or unpause first.");
     });
 
@@ -339,20 +340,19 @@ public class MiscModule extends AbstractModule {
   public void registerClientCommands(ClientCommandHandler handler) {
     handler.add("sync", "[selector|player...]", "Re-synchronize world state of a player.", (args, player) -> {
       if (args.length == 0) {
-       if(!syncPlayer(player)) Players.err(player, "You may only /sync every [orange]5 seconds[].");
+       if(!syncPlayer(player)) player.err("You may only /sync every @.", "5 seconds");
        return;
       } else if (!player.admin()) {
-        Players.errArgUseDenied(player);
+        player.errArgUseDenied();
         return;
       }
 
       SelectorParser selector = Modules.selector.parse(player, args, true);
       if (selector == null) return;
       selector.execute((p, u) -> {
-        if (syncPlayer(p) && player != p)
-          Players.warn(p, "World state resynchronized by @[orange].", player.getName());
+        if (syncPlayer(p) && player != p) p.warn("World state resynchronized by @.", player.getName());
       });
-      Players.ok(player, selector.formatMessage("Resynchronized", true) + "[green].");
+      player.ok(selector.formatMessage("Resynchronized", true) + "[green].");
     });
 
     handler.addAdmin("fillitems", "[team|all] [items...]",
@@ -361,10 +361,10 @@ public class MiscModule extends AbstractModule {
         Seq<Team> teams = Seq.select(Team.all, t -> t.items().any());
 
         if (teams.isEmpty()) {
-          Players.info(player, "No team has items in their core.");
+          player.info("No team has items in their core.");
           return;
         }
-        Players.info(player, "Teams items: [[[#1E90FF]@[] team" + (teams.size > 1 ? "s]" : "]"), teams.size);
+        player.info("Teams items: [[[#1E90FF]" + teams.size + "[] team" + (teams.size > 1 ? "s]" : "]"));
 
         StringBuilder builder = new StringBuilder();
         Seq<String> lines = new Seq<>();
@@ -380,7 +380,7 @@ public class MiscModule extends AbstractModule {
           Strings.tableify(lines, 50, 2).each(l -> builder.append("[gray]| |[] ").append(l).append('\n'));
           builder.append("[gray]|[]");
 
-          Players.info(player, builder.toString());
+          player.info(builder.toString());
           builder.setLength(0);
           lines.clear();
         }
@@ -394,10 +394,10 @@ public class MiscModule extends AbstractModule {
         team = Modules.team.searchTeam(args[0]);
 
         if (team == null) {
-          Players.err(player, "No team with that name or id found.");
+          player.err("No team with that name or id found.");
           return;
         } else if (team.cores().isEmpty()) {
-          Players.err(player, "That team has no cores.");
+          player.err("That team has no cores.");
           return;
         }
       }
@@ -408,7 +408,7 @@ public class MiscModule extends AbstractModule {
         for (String i : rest) {
           Item item = Vars.content.item(i);
           if (item == null) {
-            Players.err(player, "Unknown item '[orange]@[]'.", i);
+            player.err("Unknown item '@'.", i);
             return;
           }
           items.add(item);
@@ -418,9 +418,9 @@ public class MiscModule extends AbstractModule {
       if (team == null) fillCores(items);
       else fillCore(team, items);
 
-      Players.ok(player, "Core of " + (team == null ? "[accent]all teams[]" : "@ team") + " filled" +
-                (args.length == 2 ? " with item" + (items.size > 1 ? "s" : "") + ": [accent]@[]." : "."),
-                team != null ? team.coloredName() : args.length == 2 ? Strings.toSentence(items, i -> i.name) : null,
+      player.ok("Core of @ filled" + (args.length == 2 ? " with item" + (items.size > 1 ? "s" : "") + ": @." : "."),
+                team == null ? "all teams" : team.coloredName() +
+                  (args.length == 2 ? Strings.toSentence(items, i -> i.name) : null) + " team",
                 team != null && args.length == 2 ? Strings.toSentence(items, i -> i.name) : null);
     });
 
@@ -428,12 +428,14 @@ public class MiscModule extends AbstractModule {
       if (args.length == 1) {
         try {
           setGamemode(Gamemode.valueOf(args[0]));
-          Players.ok(player, "Gamemode changed to [accent]@[].", args[0]);
+          player.ok("Gamemode changed to @.", args[0]);
           logger.info("Gamemode has been changed to '@' by @.", args[0], player.stripedName);
           Modules.messaging.serverWarn("Gamemode", "Changed to @ by @.", args[0], player.getName());
 
-        } catch (IllegalArgumentException e) { Players.err(player, "Unknown gamemode '[orange]@[]'.", args[0]); }
-      } else Players.info(player, "The current gamemode is '@'.", Vars.state.rules.mode().name());
+        } catch (IllegalArgumentException e) { player.err("Unknown gamemode '@'.", args[0]); }
+      } else player.info("The current gamemode is '@'.\n Available are: @", //TODO: Returned gamemode is wrong
+                         Vars.state.rules.mode().name(),
+                         Strings.toSentence(Structs.iterable(Gamemode.all), Gamemode::name));
     });
 
     handler.addAdmin("pause", "<on|off>", "Toggle the game state.", (args, player) -> {
@@ -441,7 +443,7 @@ public class MiscModule extends AbstractModule {
       if (Strings.isTrue(args[0])) pause = true;
       else if (Strings.isFalse(args[0])) pause = false;
       else {
-        Players.err(player, "Invalid argument! Must be '[orange]on[]' or '[orange]off[]'.");
+        player.err("Invalid argument! Must be '@' or '@'.", "on", "off");
         return;
       }
 
@@ -449,7 +451,7 @@ public class MiscModule extends AbstractModule {
       // Set state twice because auto pause can modify it
       Vars.state.set(news);
       Core.app.post(() -> Core.app.post(() -> Vars.state.set(news)));
-      Players.ok(player, "Game [accent]@[].", pause ? "paused" : "unpaused");
+      player.ok("Game @.", pause ? "paused" : "unpaused");
       logger.info("Game @ by @.", pause ? "paused" : "unpaused", player.stripedName);
       if (old == news) return;
       Modules.messaging.serverWarn("Game", "@ by @.", pause ? "Paused" : "Unpaused", player.getName());
@@ -464,10 +466,10 @@ public class MiscModule extends AbstractModule {
     for (int c=0; c<columns.length; c++) {
       if (columns[c] == null) continue;
       scolumns[c] = columns[c].map(l -> arc.util.Log.removeColors(l).length());
-      lengths[c] = Strings.max(scolumns[c], i -> i);
+      lengths[c] = Structs.max(scolumns[c], i -> i);
     }
 
-    int max = Strings.max(columns, a -> a == null ? 0 : a.size);
+    int max = Structs.max(columns, a -> a == null ? 0 : a.size);
     Seq<String> arr = new Seq<>(max);
     StringBuilder builder = new StringBuilder();
     String[] fillers = new String[columns.length];

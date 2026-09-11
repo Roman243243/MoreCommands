@@ -53,13 +53,15 @@ public class ModuleRegistry {
    */
   public static Fi getFile(Module module) {
     Mod context = modules.get(module);
-    if (context == null) throw new IllegalArgumentException("the module '"+module.internalName()+"' is not registed");
+    if (context == null)
+      throw new IllegalArgumentException("the module '" + module.internalName() + "' is not registed");
     return context.getConfigFolder().child(module.internalName() + ".json");
   }
 
   public static JsonSettings getSettings(SaveableModule module) {
     return getSettings(module, false);
   }
+
   /** @return the settings handler of the specified {@code module}. */
   public static JsonSettings getSettings(SaveableModule module, boolean backuped) {
     // Should be a table stored in a sqlite database, but I'm too lazy and drivers are too big.
@@ -227,7 +229,7 @@ public class ModuleRegistry {
         init[0] = false;
       }
     });
-    return (initialized = init[0] && reload(true));
+    return initialized = (init[0] && reload(true));
   }
 
   /** Reloads the {@link SaveableModule}s configuration. */

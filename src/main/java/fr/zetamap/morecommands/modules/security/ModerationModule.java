@@ -23,10 +23,12 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.regex.Pattern;
 
+import arc.func.Cons;
 import arc.struct.ObjectMap;
 import arc.struct.ObjectSet;
 import arc.struct.Seq;
 import arc.util.Time;
+import arc.util.CommandHandler.CommandRunner;
 
 import mindustry.Vars;
 import mindustry.net.Administration.PlayerInfo;
@@ -65,7 +67,7 @@ public class ModerationModule extends AbstractModule {
         message = message == null ? e.toString() : !message.endsWith(".") ? message+'.' : message;
 
         if (executor == null) logger.err(quotes.matcher(message).replaceAll("'&fb&lb$1&fr'"));
-        else Players.err(executor, quotes.matcher(message).replaceAll("'[orange]$1[]'"));
+        else executor.err(quotes.matcher(message).replaceAll("'[orange]$1[]'"));
         return -1;
       }
     }
@@ -110,8 +112,16 @@ public class ModerationModule extends AbstractModule {
     builder.append('.');
 
     if (executor == null) logger.info(builder.toString(), args.toArray());
-    else Players.ok(executor, builder.toString(), args.toArray());
+    else executor.ok(builder.toString(), args.toArray());
     return true;
+  }
+
+  private CommandRunner<PlayerData> clientPunishmentCommand(Punishment.Type kind) {
+    return (args, player) -> punishmentCommand(kind, args, player);
+  }
+
+  private Cons<String[]> serverPunishmentCommand(Punishment.Type kind) {
+    return args -> punishmentCommand(kind, args, null);
   }
 
   private void punishmentCommand(Punishment.Type kind, String[] args, PlayerData executor) {
@@ -137,25 +147,25 @@ public class ModerationModule extends AbstractModule {
       final String reason0 = reason;
       selector.execute((p, u) -> {
         if (executor == p) {
-          Players.err(p, "You cannot punish yourself.");
+          p.err("You cannot punish yourself.");
           return;
         }
         Modules.punishments.punish(executor, p, kind, duration0, reason0);
         if (executor == null) logger.info("@ @.", action, p.stripedName);
-        else Players.info(executor, "[accent]@[] @[white].", action, p.getName());
+        else executor.info("@ @.", action, p.getName());
       });
       if (executor == null)
         logger.info("@ for @" + (reason != null ? " with reason: '@'." : '.'),
                     "&fr" + selector.formatMessage(action), DurationFormatter.format(duration), reason);
-      else Players.ok(executor, "@[green] for [accent]@[]" + (reason != null ? " with reason: '[accent]@[green]'." : '.'),
-                      selector.formatMessage(action, true), DurationFormatter.format(duration), reason);
+      else executor.ok("@ for @" + (reason != null ? " with reason: '@'." : '.'),
+                       "[]" + selector.formatMessage(action, true), DurationFormatter.format(duration), reason);
       return;
     }
 
     Players.SearchResult result = Players.findByName(args);
     if (result.found) {
       if (executor == result.player) {
-        Players.err(result.player, "You cannot punish yourself.");
+        result.player.err("You cannot punish yourself.");
         return;
       }
 
@@ -168,9 +178,8 @@ public class ModerationModule extends AbstractModule {
       if (executor == null)
         logger.info("@ @ for @" + (reason != null ? " with reason: '@'." : '.'), action, result.player.stripedName,
                     DurationFormatter.format(duration), reason);
-      else Players.ok(executor, "[accent]@[] @[green] for [accent]@[]" +
-                                (reason != null ? " with reason: '[accent]@[green]'." : '.'),
-                      action, result.player.getName(), DurationFormatter.format(duration), reason);
+      else executor.ok("@ @ for @" + (reason != null ? " with reason: '@'." : '.'), action, result.player.getName(),
+                       DurationFormatter.format(duration), reason);
       return;
     }
 
@@ -185,10 +194,10 @@ public class ModerationModule extends AbstractModule {
       info = Vars.netServer.admins.getInfoOptional(args[0]);
       if (info == null) {
         if (executor == null) logger.err("No player found with name or uuid '@'.", args[0]);
-        else Players.err(executor, "No player found with name or uuid '[orange]@[]'.", args[0]);
+        else executor.err("No player found with name or uuid '@'.", args[0]);
         return;
       } else if (executor != null && executor.uuid.equals(info.id)) {
-        Players.err(executor, "You cannot punish yourself.");
+        executor.err("You cannot punish yourself.");
         return;
       }
 
@@ -203,18 +212,26 @@ public class ModerationModule extends AbstractModule {
 
     Modules.punishments.punish(executor, target, address, kind, duration, reason);
     if (info == null) {
-      if (executor == null) logger.info("@ IP '@' for @" + (reason != null ? " with reason: '@'." : '.'), action, address,
-                                        DurationFormatter.format(duration), reason);
-      else Players.ok(executor, "[accent]@[] IP '[accent]@[]' for [accent]@[]" +
-                                (reason != null ? " with reason: '[accent]@[green]'." : '.'),
-                      action, address, DurationFormatter.format(duration), reason);
+      if (executor == null) logger.info("@ IP '@' for @" + (reason != null ? " with reason: '@'." : '.'), action,
+                                        address, DurationFormatter.format(duration), reason);
+      else executor.ok("@ IP '@' for @" + (reason != null ? " with reason: '@'." : '.'),action, address,
+                       DurationFormatter.format(duration), reason);
 
     } else if (executor == null)
       logger.info("@ @ [@, @] for @" + (reason != null ? " with reason: '@'." : '.'), action,
                   info.plainLastName(), target, address, DurationFormatter.format(duration), reason);
-    else Players.ok(executor, "[accent]@ @[green] [gray][[[lightgray]@[], [lightgray]@[]][] for [accent]@[]" +
-                              (reason != null ? " with reason: 'accent]@[green]'." : '.'),
-                      action, info.lastName, target, address, DurationFormatter.format(duration), reason);
+    else
+      executor.ok("@ @ @, @ for @" + (reason != null ? " with reason: '@'." : '.'), action, info.lastName,
+                  "[gray][[[lightgray]" + target + "[],[lightgray]" + address + "[]]",
+                  DurationFormatter.format(duration), reason);
+  }
+
+  private CommandRunner<PlayerData> clientPardonCommand(Punishment.Type kind) {
+    return (args, player) -> pardonCommand(kind, args, player);
+  }
+
+  private Cons<String[]> serverPardonCommand(Punishment.Type kind) {
+    return args -> pardonCommand(kind, args, null);
   }
 
   private void pardonCommand(Punishment.Type kind, String[] args, PlayerData executor) {
@@ -232,20 +249,20 @@ public class ModerationModule extends AbstractModule {
         p = Modules.punishments.get(id);
         if (p == null) {
           if (executor == null) logger.err("No punishment with id '@' found.", id);
-          else Players.err(executor, "No punishment with id '[orange]@[]' found.", id);
+          else executor.err("No punishment with id '@' found.", id);
           return;
         } else if (p.pardoned()) {
           if (executor == null) logger.err("Punishment @ is already pardoned.", id);
-          else Players.err(executor, "Punishment [orange]@[] is already pardoned.", id);
+          else executor.err("Punishment @ is already pardoned.", id);
           return;
         }
 
         Modules.punishments.pardon(executor, p, reason);
         if (reason == null) {
           if (executor == null) logger.info("Punishment @ pardoned.", id);
-          else Players.ok(executor, "Punishment [accent]@[] pardoned.", id);
+          else executor.ok("Punishment @ pardoned.", id);
         } else if (executor == null) logger.info("Punishment @ pardoned for reason: @.", id, reason);
-        else Players.ok(executor, "Punishment [accent]@[] pardoned for reason: [accent]@[].", id, reason);
+        else executor.ok("Punishment @ pardoned for reason: @.", id, reason);
 
       } else {
         p = Modules.punishments.last(args[0], Punishment.Type.kick);
@@ -254,9 +271,9 @@ public class ModerationModule extends AbstractModule {
           if (executor == null)
             logger.err("@ [@] is not currently @ or @.", Players.getLastName(args[0], true), args[0],
                        Punishment.Type.kick.verb, Punishment.Type.votekick.verb);
-          else Players.err(executor, "[orange]@[scarlet] [gray][[[lightgray]@[]][] is not currently [orange]@[] or "
-                                   + "[orange]@[].",
-                           Players.getLastName(args[0]), args[0], Punishment.Type.kick.verb, Punishment.Type.votekick.verb);
+          else executor.err("@ @ is not currently @ or @.", Players.getLastName(args[0]),
+                            "[gray][[[lightgray]" + args[0] + "[]]", Punishment.Type.kick.verb,
+                            Punishment.Type.votekick.verb);
           return;
         }
 
@@ -288,7 +305,7 @@ public class ModerationModule extends AbstractModule {
         });
         if (selector.noTargetFound()) {
           if (executor == null) logger.info(selector.formatMessage("Un" + kind.verb) + '.');
-          else Players.ok(executor, selector.formatMessage("Un" + kind.verb, true) + "[green].");
+          else executor.ok(selector.formatMessage("Un" + kind.verb, true) + "[green].");
         }
         return;
       }
@@ -299,7 +316,7 @@ public class ModerationModule extends AbstractModule {
         if (p == null) {
           if (executor == null)
             logger.err("@ [@] is not currently @.", result.player.stripedName, result.player.uuid, kind.verb);
-          else Players.err(executor, "@[scarlet] [gray][[[lightgray]@[]][] is not currently [orange]@[].",
+          else executor.err("@[scarlet] [gray][[[lightgray]@[]][] is not currently [orange]@[].",
                            result.player.getName(), result.player.uuid, kind.verb);
           return;
         }
@@ -321,9 +338,9 @@ public class ModerationModule extends AbstractModule {
       if (p == null) {
         if (byAddress) {
           if (executor == null) logger.err("IP or UUID '@' is not currently @.", args[0], kind.verb);
-          else Players.err(executor, "IP or UUID '[orange]@[]' is not currently [orange]@[].", args[0], kind.verb);
+          else executor.err("IP or UUID '@' is not currently @.", args[0], kind.verb);
         } else if (executor == null) logger.err("Player not found!");
-        else Players.errPlayerNotFound(executor);
+        else executor.errPlayerNotFound();
         return;
       }
     }
@@ -340,7 +357,7 @@ public class ModerationModule extends AbstractModule {
 
     if (kind == null) {
       if (punishments == null || punishments.isEmpty()) {
-        Players.info(executor, "[gold]@ was never punished.",
+        executor.info("[gold]@ was never punished.",
                      target != null && target.equals(executor.uuid) ? "You" : "The player");
         return;
       }
@@ -367,9 +384,10 @@ public class ModerationModule extends AbstractModule {
             builder.append("Pardonned at [#1E90FF]").append(dateFormatter.format(Instant.ofEpochMilli(p.pardon.when)))
                    .append("[]");
             if (p.pardon.author != null)
-              builder.append(" by '[accent]").append(Players.getLastName(p.author)).append("[white]' [gray]([lightgray]")
-                     .append(p.pardon.author).append("[])[]");
-            if (p.pardon.reason != null) builder.append(" for reason: '[accent]").append(p.pardon.reason).append("[white]'");
+              builder.append(" by '[accent]").append(Players.getLastName(p.author))
+                     .append("[white]' [gray]([lightgray]").append(p.pardon.author).append("[])[]");
+            if (p.pardon.reason != null)
+              builder.append(" for reason: '[accent]").append(p.pardon.reason).append("[white]'");
             builder.append(".[]");
 
           } else if (!p.permanant()) {
@@ -382,7 +400,7 @@ public class ModerationModule extends AbstractModule {
         }
 
         if (count == perPage) {
-          Players.info(executor, builder.toString());
+          executor.info(builder.toString());
           builder.setLength(0);
           count = 0;
         } else {
@@ -390,14 +408,15 @@ public class ModerationModule extends AbstractModule {
           count++;
         }
       }
-      if (count > 0) Players.info(executor, builder.toString());
+      if (count > 0) executor.info(builder.toString());
         return;
     }
 
     if (executor == null) {
       if (punishments.isEmpty()) logger.info(Strings.capitalize(kind.verb) + " players: [@]", "empty");
-      else logger.info(Strings.capitalize(kind.verb) + " players: [total: @, expired: @, pardonned: @]", punishments.size,
-                       punishments.count(Punishment::expired), punishments.count(Punishment::pardoned));
+      else logger.info(Strings.capitalize(kind.verb) + " players: [total: @, expired: @, pardonned: @]",
+                       punishments.size, punishments.count(Punishment::expired),
+                       punishments.count(Punishment::pardoned));
 
       punishments.each(p -> all || !p.expired(), p -> {
         PlayerInfo info = p.target == null ? null : Vars.netServer.admins.getInfoOptional(p.target);
@@ -465,7 +484,8 @@ public class ModerationModule extends AbstractModule {
           if (p.expired()) count[1]++;
           if (p.pardoned()) count[2]++;
         }));
-        logger.info(Strings.capitalize(kind.verb) + " IPs: [total: @, expired: @, pardoned: @]", count[0], count[1], count[2]);
+        logger.info(Strings.capitalize(kind.verb) + " IPs: [total: @, expired: @, pardoned: @]", count[0], count[1],
+                    count[2]);
       }
 
       ipPunishments.each((a, pl) -> {
@@ -505,7 +525,6 @@ public class ModerationModule extends AbstractModule {
           return;
         }
       }
-
       listCommand(Punishment.Type.ban, all, null, null);
     });
 
@@ -514,32 +533,15 @@ public class ModerationModule extends AbstractModule {
       logger.err("Not implemented yet.");
     });
 
-    handler.add("ban", "<player|uuid|ip|selector> [time|default] [reason...]", "Ban a player.", args ->
-                punishmentCommand(Punishment.Type.ban, args, null));
-
-    handler.add("unban", "<uuid|ip> [reason...]", "Unban a player.", args ->
-                pardonCommand(Punishment.Type.ban, args, null));
-
-    handler.add("kick", "<player|uuid|selector> [time|default] [reason...]", "Kick a player.", args ->
-                punishmentCommand(Punishment.Type.kick, args, null));
-
-    handler.add("warn", "<player|uuid|selector> <reason...>", "Warn a player.", args ->
-                punishmentCommand(Punishment.Type.warn, args, null));
-
-    handler.add("mute", "<player|uuid|selector> [time|default] [reason...]", "Mute a player.", args ->
-                punishmentCommand(Punishment.Type.mute, args, null));
-
-    handler.add("unmute", "<player|uuid|selector> [reason...]", "Unmute a player.", args ->
-                pardonCommand(Punishment.Type.mute, args, null));
-
-    handler.add("freeze", "<player|uuid|selector> [time|default] [reason...]", "Freeze a player.", args ->
-                punishmentCommand(Punishment.Type.freeze, args, null));
-
-    handler.add("unfreeze", "<player|uuid|selector> [reason...]", "Unfreeze a player.", args ->
-                pardonCommand(Punishment.Type.freeze, args, null));
-
-    handler.add("pardon", "<uuid|punishmentId> [reason...]", "Pardon a player or a punishment.", args ->
-                pardonCommand(null, args, null));
+    handler.add("ban", "<player|uuid|ip|selector> [time|default] [reason...]", "Ban a player.", serverPunishmentCommand(Punishment.Type.ban));
+    handler.add("unban", "<uuid|ip> [reason...]", "Unban a player.", serverPardonCommand(Punishment.Type.ban));
+    handler.add("kick", "<player|uuid|selector> [time|default] [reason...]", "Kick a player.", serverPunishmentCommand(Punishment.Type.kick));
+    handler.add("warn", "<player|uuid|selector> <reason...>", "Warn a player.", serverPunishmentCommand(Punishment.Type.warn));
+    handler.add("mute", "<player|uuid|selector> [time|default] [reason...]", "Mute a player.",  serverPunishmentCommand(Punishment.Type.mute));
+    handler.add("unmute", "<player|uuid|selector> [reason...]", "Unmute a player.", serverPardonCommand(Punishment.Type.mute));
+    handler.add("freeze", "<player|uuid|selector> [time|default] [reason...]", "Freeze a player.", serverPunishmentCommand(Punishment.Type.freeze));
+    handler.add("unfreeze", "<player|uuid|selector> [reason...]", "Unfreeze a player.", serverPardonCommand(Punishment.Type.freeze));
+    handler.add("pardon", "<uuid|punishmentId> [reason...]", "Pardon a player or a punishment.", serverPardonCommand(null));
   }
 
   @Override
@@ -552,7 +554,7 @@ public class ModerationModule extends AbstractModule {
 
       if (args.length > 0) {
         if (!player.admin()) {
-          Players.errArgUseDenied(player);
+          player.errArgUseDenied();
           return;
         }
 
@@ -563,7 +565,7 @@ public class ModerationModule extends AbstractModule {
           // Try with uuid
           info = Vars.netServer.admins.getInfoOptional(name);
           if (info == null) {
-            Players.err(player, "No player found containing name or with uuid '[orange]@[]'.", name);
+            player.err("No player found containing name or with uuid '@'.", name);
             return;
           }
         } else if (found.size == 1) {
@@ -584,7 +586,7 @@ public class ModerationModule extends AbstractModule {
               }
             }
           });
-          Players.info(player, builder.toString());
+          player.info(builder.toString());
           return;
         }
 
@@ -626,7 +628,7 @@ public class ModerationModule extends AbstractModule {
       if (!ModuleRegistry.enabled(Modules.punishments)) {
         builder.append("\n[scarlet]Error: '[orange]").append(Modules.punishments.internalName())
                .append("[]' module is disabled.");
-        Players.info(player, builder.toString());
+        player.info(builder.toString());
         return;
       }
 
@@ -656,39 +658,22 @@ public class ModerationModule extends AbstractModule {
         builder.append("[]\n");
       }
 
-      Players.info(player, builder.toString());
+      player.info(builder.toString());
     });
 
     handler.addAdmin("punishments", "<player|uuid> [page|type...]", "View player punishments.", (args, player) -> {
       //TODO
-      Players.err(player, "Not implemented yet.");
+      player.err("Not implemented yet.");
     });
 
-    handler.addAdmin("ban", "<player|uuid|ip|selector> [time|default] [reason...]", "Ban a player.", (args, player) ->
-                     punishmentCommand(Punishment.Type.ban, args, player));
-
-    handler.addAdmin("unban", "<uuid|ip> [reason...]", "Unban a player.", (args, player) ->
-                     pardonCommand(Punishment.Type.ban, args, player));
-
-    handler.addAdmin("kick", "<player|uuid|selector> [time|default] [reason...]", "Kick a player.", (args, player) ->
-                     punishmentCommand(Punishment.Type.kick, args, player));
-
-    handler.addAdmin("warn", "<player|uuid|selector> <reason...>", "Warn a player.", (args, player) ->
-                     punishmentCommand(Punishment.Type.warn, args, player));
-
-    handler.addAdmin("mute", "<player|uuid|selector> [time|default] [reason...]", "Mute a player.", (args, player) ->
-                     punishmentCommand(Punishment.Type.mute, args, player));
-
-    handler.addAdmin("unmute", "<player|uuid|selector> [reason...]", "Unmute a player.", (args, player) ->
-                     pardonCommand(Punishment.Type.mute, args, player));
-
-    handler.addAdmin("freeze", "<player|uuid|selector> [time|default] [reason...]", "Freeze a player.", (args, player) ->
-                     punishmentCommand(Punishment.Type.freeze, args, player));
-
-    handler.addAdmin("unfreeze", "<player|uuid|selector> [reason...]", "Unfreeze a player.", (args, player) ->
-                     pardonCommand(Punishment.Type.freeze, args, player));
-
-    handler.addAdmin("pardon", "<uuid|punishmentId> [reason...]", "Pardon a player or a punishment.", (args, player) ->
-                     pardonCommand(null, args, player));
+    handler.addAdmin("ban", "<player|uuid|ip|selector> [time|default] [reason...]", "Ban a player.", clientPunishmentCommand(Punishment.Type.ban));
+    handler.addAdmin("unban", "<uuid|ip> [reason...]", "Unban a player.", clientPardonCommand(Punishment.Type.ban));
+    handler.addAdmin("kick", "<player|uuid|selector> [time|default] [reason...]", "Kick a player.", clientPunishmentCommand(Punishment.Type.kick));
+    handler.addAdmin("warn", "<player|uuid|selector> <reason...>", "Warn a player.", clientPunishmentCommand(Punishment.Type.warn));
+    handler.addAdmin("mute", "<player|uuid|selector> [time|default] [reason...]", "Mute a player.", clientPunishmentCommand(Punishment.Type.mute));
+    handler.addAdmin("unmute", "<player|uuid|selector> [reason...]", "Unmute a player.", clientPardonCommand(Punishment.Type.mute));
+    handler.addAdmin("freeze", "<player|uuid|selector> [time|default] [reason...]", "Freeze a player.", clientPunishmentCommand(Punishment.Type.freeze));
+    handler.addAdmin("unfreeze", "<player|uuid|selector> [reason...]", "Unfreeze a player.", clientPardonCommand(Punishment.Type.freeze));
+    handler.addAdmin("pardon", "<uuid|punishmentId> [reason...]", "Pardon a player or a punishment.", clientPardonCommand(null));
   }
 }

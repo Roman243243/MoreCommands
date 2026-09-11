@@ -20,7 +20,6 @@ package fr.zetamap.morecommands.modules.voting;
 
 import fr.zetamap.morecommands.Modules;
 import fr.zetamap.morecommands.PlayerData;
-import fr.zetamap.morecommands.misc.Players;
 import fr.zetamap.morecommands.modules.security.Punishment;
 import fr.zetamap.morecommands.util.DurationFormatter;
 
@@ -37,33 +36,31 @@ public class VoteKickSession extends PlayerVoteSession<VoteKickSession.Context> 
   @Override
   public boolean canStart(PlayerData player, Context reason) {
     if (PlayerData.size() < 3 && !player.admin()) {
-      Players.err(player, "At least 3 players are needed to start a votekick.");
+      player.err("At least @ are needed to start a votekick.", "3 players");
       return false;
     } else if (started()) {
-      Players.err(player, "A vote to kick @ [scarlet]is already in progress!\n"
-                        + "[scarlet]Type [orange]/vote y[] or [orange]/vote n[] to agree or not.",
-                  objective().target.getName());
+      player.err("A vote to kick @ is already in progress! \nType @ or @ to agree or not.",
+                 objective().target.getName(), "/vote y", "/vote n");
       return false;
 
     } else if (reason != null) { // Can be null when checking for availability
       if (player == reason.target) {
-        Players.err(player, "You can't vote to kick yourself.");
+        player.err("You can't vote to kick yourself.");
         return false;
       } else if (reason.target.admin()) {
-        Players.err(player, "Did you really expect to be able to kick an admin?");
+        player.err("Did you really expect to be able to kick an admin?");
         return false;
       } else if (player.player.team() != reason.target.player.team()) {
-        Players.err(player, "Only players on your team can be kicked.");
+        player.err("Only players on your team can be kicked.");
         return false;
       } else if (!mindustry.Vars.state.rules.pvp &&
                  PlayerData.count(p -> p.player.team() == reason.target.player.team()) < 3) {
-        Players.err(player, "At least 3 players from your own team are needed to start a votekick.");
+        player.err("At least 3 players from your own team are needed to start a votekick.");
         return false;
       }
     }
     if (waitRemaining() > 0) {
-      Players.err(player, "You must wait [orange]@[] before able to restart a vote.",
-                  DurationFormatter.format(waitRemaining()));
+      player.err("You must wait @ before able to restart a vote.", DurationFormatter.format(waitRemaining()));
       return false;
     }
     return true;
@@ -72,16 +69,16 @@ public class VoteKickSession extends PlayerVoteSession<VoteKickSession.Context> 
   @Override
   public boolean canVote(PlayerData player) {
     if (!started()) {
-      Players.err(player, "No vote session in progress.");
+      player.err("No vote session in progress.");
       return false;
     } else if (voted(player) != null) {
-      Players.info(player, "You already voted to kick @[white].", objective().target.getName());
+      player.info("You already voted to kick @.", objective().target.getName());
       return false;
     } else if (objective().target == player) {
-      Players.err(player, "You can't vote for yourself.");
+      player.err("You can't vote for yourself.");
       return false;
     } else if (objective().target.player.team() != player.player.team()) {
-      Players.err(player, "You can't vote for other teams.");
+      player.err("You can't vote for other teams.");
       return false;
     }
     return true;
@@ -90,10 +87,10 @@ public class VoteKickSession extends PlayerVoteSession<VoteKickSession.Context> 
   @Override
   public boolean canStop(PlayerData player) {
     if (!started()) {
-      Players.err(player, "No vote session in progress.");
+      player.err("No vote session in progress.");
       return false;
     } else if (!player.admin()) {
-      Players.errArgUseDenied(player);
+      player.errArgUseDenied();
       return false;
     }
     return true;
@@ -102,7 +99,7 @@ public class VoteKickSession extends PlayerVoteSession<VoteKickSession.Context> 
   /** Vote cannot be forced. */
   @Override
   public boolean force(PlayerData by) {
-    Players.err(by, "The vote cannot be forced, kick the player yourself instead.");
+    by.err("The vote cannot be forced, kick the player yourself instead.");
     return false;
   }
 
@@ -151,13 +148,13 @@ public class VoteKickSession extends PlayerVoteSession<VoteKickSession.Context> 
   protected void sessionFailed() {
     Modules.messaging.serverInfo("VoteKick", "[lightgray]Vote failed! Not enough votes to kick [orange]@[lightgray].",
                                  "[]"+objective().target.getName());
-    Players.info(objective().target, "[sky]You are no longer involved in a vote kick, you have been unfrozen.");
+    objective().target.info("[sky]You are no longer involved in a vote kick, you have been unfrozen.");
   }
 
   @Override
   protected void sessionCanceled(PlayerData by) {
     Modules.messaging.serverWarn("VoteKick", "Vote cancelled by @.", by.getName());
-    Players.info(objective().target, "[sky]You are no longer involved in a vote kick, you have been unfrozen.");
+    objective().target.info("[sky]You are no longer involved in a vote kick, you have been unfrozen.");
   }
 
   @Override

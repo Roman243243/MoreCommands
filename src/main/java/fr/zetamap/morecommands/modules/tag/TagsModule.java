@@ -170,32 +170,32 @@ public class TagsModule extends AbstractSaveableModule {
       if (args.length > 0) {
         if (args[0].equals("set")) {
           if (args.length < 3) {
-            Players.err(player, args.length == 1 ? "The '[orange]UUID[]' and '[orange]tag[]' arguments are missing!" :
-                                                   "The '[orange]tag[]' argument is missing!");
+            if (args.length > 1) player.err("The '@' argument is missing!", "tag");
+            else player.err("The '@' and '@' arguments are missing!", "UUID", "tag");
             return;
           }
 
           if (Vars.netServer.admins.getInfoOptional(args[1]) == null)
-            Players.warn(player, "No player found with the UUID '@'.", args[1]);
-          Players.ok(player, tags.put(args[1], args[2]) == null ? "Tag added." : "Tag replaced.");
+            player.warn("No player found with the UUID '@'.", args[1]);
+          player.ok(tags.put(args[1], args[2]) == null ? "Tag added." : "Tag replaced.");
           setModified();
 
           PlayerData p = PlayerData.get(args[1]);
           if (p != null) {
             p.setTag();
-            Players.info(player, "Player online, the tag has been added to him.");
+            player.info("Player online, the tag has been added to him.");
           }
           return;
 
         } else if (args[0].equals("remove")) {
           if (args.length == 1) {
-            Players.err(player, "The 'UUID' argument is missing!");
+            player.err("The '@' argument is missing!", "UUID");
             return;
           } else if (tags.remove(args[1]) == null) {
-            Players.err(player, "No tag associated with this player UUID.");
+            player.err("No tag associated with this player UUID.");
             return;
           } else {
-            Players.ok(player, "Tag removed.");
+            player.ok("Tag removed.");
             setModified();
           }
 
@@ -203,7 +203,7 @@ public class TagsModule extends AbstractSaveableModule {
           if (p != null) {
             p.setTag();
             p.setName();
-            Players.info(player, "Player online, the tag has been removed from him.");
+            player.info("Player online, the tag has been removed from him.");
           }
           return;
         }
@@ -213,14 +213,13 @@ public class TagsModule extends AbstractSaveableModule {
       if (args.length > 0) page = Strings.parseInt(args[0]);
 
       if (page == Integer.MIN_VALUE) {
-        Players.err(player, "Invalid argument! Must be '[orange]set[]' or '[orange]remove[]' or [orange]a page number[].");
+        player.err("Invalid argument! Must be '@' or '@' or @.", "set", "remove", "a page number");
         return;
       } else if (tags.isEmpty()) {
-        Players.info(player, "Player tags: [[@, [gray]empty[]]",
-                     enabled ? "[green]enabled[]" : "[scarlet]disabled[]");
+        player.info("Player tags: [[@, [gray]empty[]]", enabled ? "[green]enabled" : "[scarlet]disabled");
         return;
       } else if (page < 1 || page > pages) {
-        Players.err(player, "'[orange]page[]' must be between [orange]1[] and [orange]@[].", pages);
+        player.err("'@' must be between @ and @.", "page", "1", pages);
         return;
       }
 
@@ -245,7 +244,7 @@ public class TagsModule extends AbstractSaveableModule {
         builder.append(e.value).append('\n');
       }
 
-      Players.info(player, builder.toString());
+      player.info(builder.toString());
     });
   }
 }

@@ -25,7 +25,6 @@ import mindustry.server.ServerControl;
 
 import fr.zetamap.morecommands.Modules;
 import fr.zetamap.morecommands.PlayerData;
-import fr.zetamap.morecommands.misc.Players;
 import fr.zetamap.morecommands.util.DurationFormatter;
 import fr.zetamap.morecommands.util.Strings;
 
@@ -38,18 +37,17 @@ public class RockTheVoteSession extends PlayerVoteSession<Map> {
   @Override
   public boolean canStart(PlayerData player, Map map) {
     if (PlayerData.size() < 2 && !player.admin()) {
-      Players.err(player, "At least 2 players are required to start a vote.");
+      player.err("At least @ are required to start a vote.", "2 players");
       return false;
     } else if (started()) {
-      Players.err(player, """
-        A vote to change the map is already in progress! \
-        [lightgray](selected: [accent]@[lightgray])
-        [scarlet]Type [orange]/rtv y[] or [orange]/rtv n[] to agree or not.""",
-        objective().name()
+      player.err("""
+        A vote to change the map is already in progress! [lightgray](selected: @[lightgray])[scarlet]
+        Type @ or @ to agree or not.""",
+        objective().name(), "/rtv y", "/rtv n"
       );
       return false;
     } else if (waitRemaining() > 0) {
-      Players.err(player, "You must wait [orange]@[] before able to restart a vote.",
+      player.err("You must wait @ before able to restart a vote.",
                   DurationFormatter.format(waitRemaining()));
       return false;
     }
@@ -60,7 +58,7 @@ public class RockTheVoteSession extends PlayerVoteSession<Map> {
   public boolean start(PlayerData player) {
     if (!canStart(player, null)) return false; // null objective can be used safely.
     Map map = Vars.maps.getNextMap(ServerControl.instance.lastMode, Vars.state.map);
-    Players.info(player, "Randomized to [accent]@[white].", map.name());
+    player.info("Randomized to @.", map.name());
     return start(player, map);
   }
 
@@ -71,7 +69,7 @@ public class RockTheVoteSession extends PlayerVoteSession<Map> {
     Map map = Vars.maps.all().find(m -> m.plainName().replace('_', ' ').equalsIgnoreCase(name));
 
     if (map == null) {
-      Players.err(player.player, "No map named '@' found.", mapName);
+      player.err("No map named '@' found.", mapName);
       return false;
     }
     return start(player, map);
@@ -80,10 +78,10 @@ public class RockTheVoteSession extends PlayerVoteSession<Map> {
   @Override
   public boolean canVote(PlayerData player) {
     if (!started()) {
-      Players.err(player, "No vote session in progress.");
+      player.err("No vote session in progress.");
       return false;
     } else if (voted(player) != null) {
-      Players.info(player, "You already voted for the map [accent]@[white].", objective().name());
+      player.info("You already voted for the map @.", objective().name());
       return false;
     }
     return true;
@@ -92,10 +90,10 @@ public class RockTheVoteSession extends PlayerVoteSession<Map> {
   @Override
   public boolean canStop(PlayerData player) {
     if (!started()) {
-      Players.err(player, "No vote session in progress.");
+      player.err("No vote session in progress.");
       return false;
     } else if (!player.admin()) {
-      Players.errArgUseDenied(player);
+      player.errArgUseDenied();
       return false;
     }
     return true;

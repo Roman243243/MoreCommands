@@ -31,49 +31,49 @@ import fr.zetamap.morecommands.util.Strings;
 public class HelpModule extends AbstractModule {
   @Override
   public void registerServerCommands(ServerCommandHandler handler) {
-    
+
   }
-  
+
   @Override
   public void registerClientCommands(ClientCommandHandler handler) {
     handler.add("help", "[command|page|selectors]", "Lists all commands.", (args, player) -> {
       String command;
       int perPage = 8, page = 1, pages;
-      
+
       if (args.length == 1) {
         if (args[0].equals("selectors")) {
           mindustry.gen.Call.openURI(player.player.con,
             "https://github.com/ZetaMap/MoreCommands/blob/main/README.md#selectors");
           return;
         }
-        
+
         page = Strings.parseInt(args[0]);
-        
+
         if (page == Integer.MIN_VALUE) command = args[0];
         else command = null;
       } else command = null;
-      
+
       if (command != null) {
         Command c = handler.handler.getCommandList().find(cc -> cc.text.equals(command));
-        
+
         // Act like the command is not found when the player is not an administrator
-        if (c == null || (!player.admin() && handler.isAdmin(c.text))) 
-             Players.err(player, "No command named '[orange]@[]' found.", command);
-        else Players.info(player, "[orange]@@[white] @ [lightgray]- @", handler.handler.prefix, c.text, c.paramText, 
+        if (c == null || (!player.admin() && handler.isAdmin(c.text)))
+             player.err("No command named '@' found.", command);
+        else Players.warn(player, "@@[white] @ [lightgray]- @", handler.handler.prefix, c.text, c.paramText,
                           c.description);
         return;
       }
-      
+
       Seq<Command> commands = handler.handler.getCommandList();
       if (!player.admin()) commands = commands.select(c -> !handler.isAdmin(c.text));
       pages = Mathf.ceil((float)commands.size / perPage);
-      
+
       if (page < 1 || page > pages) {
-        Players.err(player, "'[orange]page[]' must be a number between [orange]1[] and [orange]@[].", pages);
+        player.err("'@' must be a number between @ and @.", "page", "1", pages);
         return;
       }
-      
-      Players.info(player, "[orange]-- Commands page [lightgray]@[gray]/[]@ [gray]([]@[gray])[][] --", page, pages,
+
+      Players.warn(player, "-- Commands page [lightgray]@[gray]/[]@ [gray]([]@[gray])[][] --", page, pages,
                    commands.size);
       StringBuilder builder = new StringBuilder();
       for(int i=perPage*(page-1); i<Math.min(perPage*page, commands.size); i++) {
@@ -83,7 +83,7 @@ public class HelpModule extends AbstractModule {
         builder.append("  [orange]/").append(c.text).append(" [white]").append(c.paramText).append(" [lightgray]- ")
                .append(c.description).append("\n");
       }
-      Players.info(player, builder.toString());
+      player.info(builder.toString());
     });
   }
 }

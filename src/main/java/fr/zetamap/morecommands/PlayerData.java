@@ -171,14 +171,16 @@ public class PlayerData {
   public void errPlayerNotFound() { Players.errPlayerNotFound(this); }
   public void errArgUseDenied() { Players.errArgUseDenied(this); }
   public void errCommandUseDenied() { Players.errCommandUseDenied(this); }
-  public void err(String message) { Players.err(this, message); }
-  public void err(String message, Object... args) { Players.err(this, message, args); }
-  public void info(String message) { Players.info(this, message); }
-  public void info(String message, Object... args) { Players.info(this, message, args); }
-  public void warn(String message) { Players.warn(this, message); }
-  public void warn(String message, Object... args) { Players.warn(this, message, args); }
-  public void ok(String message) { Players.ok(this, message); }
-  public void ok(String message, Object... args) { Players.ok(this, message, args); }
+  public void err(String message) { Modules.messaging.playerErr/*Players.err*/(this, message); }
+  public void err(String message, Object... args) { Modules.messaging.playerErr/*Players.err*/(this, message, args); }
+  public void info(String message) { Modules.messaging.playerInfo/*Players.info*/(this, message); }
+  public void info(String message, Object... args) { Modules.messaging.playerInfo/*Players.info*/(this, message, args); }
+  public void warn(String message) { Modules.messaging.playerWarn/*Players.warn*/(this, message); }
+  public void warn(String message, Object... args) { Modules.messaging.playerWarn/*Players.warn*/(this, message, args); }
+  public void debug(String message) { Modules.messaging.playerDebug(this, message); }
+  public void debug(String message, Object... args) { Modules.messaging.playerDebug(this, message, args); }
+  public void ok(String message) { Modules.messaging.playerOk/*Players.ok*/(this, message); }
+  public void ok(String message, Object... args) { Modules.messaging.playerOk/*Players.ok*/(this, message, args); }
 
 
   public static String getShortUuid(String uuid) {

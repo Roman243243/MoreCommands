@@ -121,7 +121,7 @@ public class CoordinatesParser {
         if (message.charAt(message.length()-1) != '.') message += '.';
         message = quotes.matcher(message).replaceAll("'[orange]$1[]'");
       }
-      Players.err(executor, message);
+      executor.err(message);
     }
     return null;
   }

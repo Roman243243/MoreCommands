@@ -198,7 +198,7 @@ public class SettingsMigrator {
         if (server != null) logger.warn("Another server in switch list is named '@'. Was: @", internalName, server);
         Modules.switcher.put(new Server(internalName, null, name, address, admin));
       } catch (Exception e) {
-        logger.err("Unable to migrate server '@: @' in switch list: @. Skipping", n, a, e.toString());
+        logger.err("Unable to migrate server '@: @' in switch list: @. Skipping...", n, a, e.toString());
       }
     });
 
@@ -284,6 +284,7 @@ public class SettingsMigrator {
         Reflect.invoke(provider, "addToken", new Object[] {token}, String.class);
       } catch (Exception e) {
         logger.err("Unable to migrate the anti vpn", e);
+        return;
       }
     }
 

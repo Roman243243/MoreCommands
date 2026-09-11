@@ -21,7 +21,6 @@ package fr.zetamap.morecommands.modules.selector;
 import fr.zetamap.morecommands.PlayerData;
 import fr.zetamap.morecommands.misc.CoordinatesParser;
 import fr.zetamap.morecommands.misc.Gatekeeper;
-import fr.zetamap.morecommands.misc.Players;
 import fr.zetamap.morecommands.module.AbstractModule;
 import fr.zetamap.morecommands.module.ModuleRegistry;
 
@@ -59,11 +58,11 @@ public class SelectorModule extends AbstractModule {
   public SelectorParser parse(PlayerData executor, String[] args, int from, int to, boolean onlyPlayers) {
     if (args.length == 0 || from < 0 || to > args.length || from >= to || args[from].isEmpty()) {
       if (executor == null) throw new IllegalArgumentException("Missing player name/uuid or selector.");
-      else Players.err(executor, "Missing player name/uuid or selector.");
+      else executor.err("Missing player name/uuid or selector.");
       return null;
     } else if (Selectors.isSelector(args[from]) && !enabled()) {
       if (executor == null) throw new IllegalArgumentException("Selectors are disabled, you cannot use them.");
-      else Players.err(executor, "Selectors are disabled, you cannot use them.");
+      else executor.err("Selectors are disabled, you cannot use them.");
       return null;
     }
     return SelectorParser.parse(executor, args, from, to, onlyPlayers);

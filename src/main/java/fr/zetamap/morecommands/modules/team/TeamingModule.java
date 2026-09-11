@@ -27,7 +27,6 @@ import mindustry.gen.Unit;
 import fr.zetamap.morecommands.Modules;
 import fr.zetamap.morecommands.PlayerData;
 import fr.zetamap.morecommands.command.ClientCommandHandler;
-import fr.zetamap.morecommands.misc.Players;
 import fr.zetamap.morecommands.module.AbstractModule;
 import fr.zetamap.morecommands.modules.selector.SelectorParser;
 import fr.zetamap.morecommands.util.Strings;
@@ -74,7 +73,7 @@ public class TeamingModule extends AbstractModule {
   public boolean removeVanish(PlayerData player) {
     if (!player.vanished()) return false;
     if (player.lastTeam == null) {
-      Players.warn(player, "No last team registered, using default one.");
+      player.warn("No last team registered, using default one.");
       player.lastTeam = Vars.state.rules.defaultTeam;
     }
     player.player.team(player.lastTeam);
@@ -91,11 +90,11 @@ public class TeamingModule extends AbstractModule {
         // Not a great idea to mix two behavior.
         // But I don't want another argument or to run again '/team vanish' to get send back
         if (player.vanished()) {
-          Players.info(player, "Transferring you back to your last team...");
+          player.info("Transferring you back to your last team...");
           removeVanish(player);
 
         } else {
-          Players.info(player, "Available teams: ");
+          player.info("Available teams: ");
           StringBuilder builder = new StringBuilder("  - [lightgray]vanish[] [scarlet](admin)[]\n");
           for (Team t : Team.all) {
             int cores = t.cores().size;
@@ -108,30 +107,30 @@ public class TeamingModule extends AbstractModule {
               break;
             }
           }
-          Players.info(player, builder.toString());
+          player.info(builder.toString());
         }
         return;
       }
 
       Team team = args[0].equals("vanish") ? PlayerData.vanishTeam : getTeam(player, args[0]);
       if (team == null) {
-        Players.err(player, "No team found for name or id '[orange]@[]'.", args[0]);
+        player.err("No team found for name or id '@'.", args[0]);
         return;
       }
       String teamName = team.coloredName();
 
       if (args.length == 1) {
         if (args[0].equals("~"))
-          Players.warn(player, "Makes no sense to get transferred to your current team =/. Use this with a selector instead.");
-        else if (!setTeam(player, team)) Players.ok(player, "Transferred you to the [white]@[] team.", teamName);
-        else Players.ok(player, "You are now in vanish mode. [lightgray]Use [gray]/team[] to disable it.");
+          player.warn("Makes no sense to get transferred to your current team =/. Use this with a selector instead.");
+        else if (!setTeam(player, team)) player.ok("Transferred you to the [white]@[] team.", teamName);
+        else player.ok("You are now in vanish mode. [lightgray]Use [gray]/team[] to disable it.");
         return;
       }
 
       SelectorParser parsed = Modules.selector.parse(player, args, 1, args.length);
       if (parsed == null) return; // Error message has already been send to the player
       if (team == PlayerData.vanishTeam && parsed.selected != null && !parsed.selected.allMatch(Unit::isPlayer)) {
-        Players.err(player, "Vanish team is reserved for players but some units was selected.");
+        player.err("Vanish team is reserved for players but some units was selected.");
         return;
       }
 
@@ -142,12 +141,12 @@ public class TeamingModule extends AbstractModule {
         }
         boolean vanish = setTeam(p, team);
         if (p == player) return;
-        if (vanish) Players.warn(p, "You have been vanished by @[orange]. @", player.getName(),
-                                 p.admin() ? "[lightgray]Use [gray]/team[] to disable it." : "");
-        else Players.warn(p, "You have been transferred to the [white]@[] team by @[orange].", teamName, player.getName());
+        if (vanish) p.warn("You have been vanished by @." +
+                           (p.admin() ? " [lightgray]Use [gray]/team[] to disable it." : ""), player.getName());
+        else p.warn("You have been transferred to the @ team by @.", teamName, player.getName());
       });
-      if (team == PlayerData.vanishTeam) Players.ok(player, parsed.formatMessage("Vanished", true) + "[green].");
-      else Players.ok(player, "@[green] to the [white]@[] team.", parsed.formatMessage("Transferred", true), teamName);
+      if (team == PlayerData.vanishTeam) player.ok(parsed.formatMessage("Vanished", true) + "[green].");
+      else player.ok("@ to the @ team.", parsed.formatMessage("Transferred", true), teamName);
     });
   }
 }
