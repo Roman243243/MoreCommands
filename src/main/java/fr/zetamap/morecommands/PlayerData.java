@@ -287,6 +287,25 @@ public class PlayerData {
       Core.app.post(() -> PlayerData.remove(e.player));
     });
 
+    Timer.schedule(() -> {
+      Seq<PlayerData> stale = new Seq<>();
+
+      PlayerData.each(data -> {
+        Player current = Groups.player.getByID(data.player.id);
+
+        if (current != data.player) {
+          stale.add(data);
+        }
+      });
+
+      stale.each(data -> {
+
+        data.player.name = data.realName;
+
+        PlayerData.remove(data.player);
+      });
+    }, 1f, 10f);
+
     Events.on(EventType.ConnectPacketEvent.class, e ->
       e.connection.uuid = e.packet.uuid // Fixes uuid not showing on the console when kicking a player
     );
